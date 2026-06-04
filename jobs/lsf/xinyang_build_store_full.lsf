@@ -9,7 +9,7 @@
 #BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full.out
 #BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full.err
 
-set -euo pipefail
+set -eo pipefail
 
 PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
 STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_full"
@@ -22,9 +22,13 @@ cd "$PROJECT_ROOT"
 
 if command -v conda >/dev/null 2>&1; then
   eval "$(conda shell.bash hook)"
+  set +u
   conda activate "$ENV_NAME"
+  set -u
 elif [ -f ".venv/bin/activate" ]; then
+  set +u
   source .venv/bin/activate
+  set -u
 fi
 
 python --version

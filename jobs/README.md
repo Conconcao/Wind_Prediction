@@ -2,13 +2,14 @@
 
 - `jobs/slurm/` stores reusable Slurm job scripts.
 - `jobs/templates/` stores reusable job templates.
-- The server working root is `/s502024280003/gpfs`.
+- The persistent server root should be `/home3/s502024280003`.
+- Do not store the repository, datasets, logs, checkpoints, or experiment outputs under `/s502024280003/gpfs/`; that path is only a temporary job workspace and may be cleaned automatically after `7` days.
 - Each job should request at most `2` GPUs.
 - Job scripts should always make input paths, output paths, log paths, and environment activation explicit.
 - Current xinyang graph-model jobs:
   - `jobs/slurm/xinyang_build_store_full.slurm`
   - `jobs/slurm/xinyang_train_gwnet_full.slurm`
 - Recommended server repo root:
-  - `/s502024280003/gpfs/Wind_Prediction`
+  - `/home3/s502024280003/Wind_Prediction`
 - Recommended xinyang data upload folder:
-  - `/s502024280003/gpfs/Wind_Prediction/data/xinyang/`
+  - `/home3/s502024280003/Wind_Prediction/data/xinyang/`

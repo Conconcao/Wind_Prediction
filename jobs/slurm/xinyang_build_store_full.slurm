@@ -5,12 +5,12 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=08:00:00
-#SBATCH --output=/s502024280003/gpfs/Wind_Prediction/logs/%x_%j.out
-#SBATCH --error=/s502024280003/gpfs/Wind_Prediction/logs/%x_%j.err
+#SBATCH --output=/home3/s502024280003/Wind_Prediction/logs/%x_%j.out
+#SBATCH --error=/home3/s502024280003/Wind_Prediction/logs/%x_%j.err
 
 set -euo pipefail
 
-PROJECT_ROOT="/s502024280003/gpfs/Wind_Prediction"
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
 STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_full"
 CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml"
 

@@ -1,14 +1,19 @@
 # Xinyang Server Layout
 
-## Recommended server repo root
+## Recommended persistent server repo root
 
-- `/s502024280003/gpfs/Wind_Prediction`
+- `/home3/s502024280003/Wind_Prediction`
+
+Do not place the repository, datasets, logs, model checkpoints, or
+experiment outputs under `/s502024280003/gpfs/`. That directory is only
+the temporary job workspace and may be cleaned automatically after `7`
+days.
 
 ## Recommended data upload target
 
 Please place the xinyang files here:
 
-- `/s502024280003/gpfs/Wind_Prediction/data/xinyang/`
+- `/home3/s502024280003/Wind_Prediction/data/xinyang/`
 
 Required files:
 
@@ -19,7 +24,7 @@ Required files:
 
 Optional for later ablations:
 
-- `/s502024280003/gpfs/Wind_Prediction/data/open_nwp/gdex_gfs_xinyang_2025-07-01_2025-12-31_hourly.parquet`
+- `/home3/s502024280003/Wind_Prediction/data/open_nwp/gdex_gfs_xinyang_2025-07-01_2025-12-31_hourly.parquet`
 
 ## First server-side jobs
 

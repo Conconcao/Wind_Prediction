@@ -112,13 +112,17 @@ On the current enriched `4`-turbine debug subset, the deep-model ordering is:
 
 ## Server layout
 
-Recommended repo root on the server:
+Recommended persistent repo root on the server:
 
-- `/s502024280003/gpfs/Wind_Prediction`
+- `/home3/s502024280003/Wind_Prediction`
 
 Please upload the required xinyang data to:
 
-- `/s502024280003/gpfs/Wind_Prediction/data/xinyang/`
+- `/home3/s502024280003/Wind_Prediction/data/xinyang/`
+
+Do not store the repository, datasets, logs, model outputs, or other
+persistent files under `/s502024280003/gpfs/`. That directory is only a
+temporary job workspace and may be cleaned automatically after `7` days.
 
 Supporting server-side files:
 

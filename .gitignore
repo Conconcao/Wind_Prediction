@@ -33,6 +33,10 @@ lightning_logs/
 !/artifacts/local_debug/.gitkeep
 /artifacts/from_hpc/*
 !/artifacts/from_hpc/.gitkeep
+/15min-lead/wind/artifacts/local_debug/*
+!/15min-lead/wind/artifacts/local_debug/.gitkeep
+/15min-lead/wind/artifacts/from_hpc/*
+!/15min-lead/wind/artifacts/from_hpc/.gitkeep
 /transfer/to_hpc/payload/*
 !/transfer/to_hpc/payload/.gitkeep
 /transfer/from_hpc/*

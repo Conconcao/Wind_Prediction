@@ -1,0 +1,28 @@
+experiment:
+  name: xinyang_15min_wind_speed
+  site: xinyang
+  task: turbine_level_15min_ahead_wind_speed
+  target_column: "骞冲潎椋庨€?"
+  horizon_steps: 1
+  base_resolution_minutes: 15
+
+data:
+  scada_15min: "/s502024280003/gpfs/Wind_Prediction/data/xinyang/ALL_TURBINES_15min_202501-202512_QC2.parquet"
+  scada_1min: "/s502024280003/gpfs/Wind_Prediction/data/xinyang/ALL_TURBINES_1min_202501-202512.parquet"
+  met_tower: "/s502024280003/gpfs/Wind_Prediction/data/xinyang/pre_QC_姘旇薄瑙傛祴鏁版嵁.xlsx"
+  turbine_meta: "/s502024280003/gpfs/Wind_Prediction/data/xinyang/椋庢満鍩烘湰淇℃伅.csv"
+  optional_nwp_hourly: "/s502024280003/gpfs/Wind_Prediction/data/open_nwp/gdex_gfs_xinyang_2025-07-01_2025-12-31_hourly.parquet"
+
+split:
+  method: chronological
+  ratio:
+    train: 0.7
+    val: 0.2
+    test: 0.1
+  train_start: "2025-01-01 00:15:00"
+  train_end: "2025-09-15 16:00:00"
+  val_start: "2025-09-15 16:15:00"
+  val_end: "2025-11-26 08:45:00"
+  test_start: "2025-11-26 09:00:00"
+  test_end: "2026-01-01 00:00:00"
+  warmup_steps_for_window_models: 96

@@ -1,0 +1,45 @@
+baselines:
+  - name: persistence
+    run_local: true
+    notes: "y_hat(t+1) = y(t)"
+  - name: seasonal_persistence
+    run_local: true
+    season_steps: 96
+  - name: sarima
+    run_local: true
+    notes: "start from farm-mean and representative turbines, then extend if runtime allows"
+  - name: lightgbm_lag_regressor
+    run_local: true
+    notes: "pooled across turbines with lag features"
+
+deep_models:
+  - name: gru_seq2one
+    priority: high
+    lookback_candidates: [16, 32, 96]
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.1
+  - name: tcn
+    priority: high
+    lookback_candidates: [16, 32, 96]
+    channels: 64
+    kernel_size: 3
+    dilations: [1, 2, 4, 8, 16]
+  - name: stgnn_primary
+    priority: highest
+    notes: "GraphWaveNet-style or AG-MGAT-inspired multi-turbine model"
+    graph_components:
+      - geographic_distance_graph
+      - train_correlation_graph
+      - learned_adaptive_graph
+  - name: transformer_ablation
+    priority: medium
+    notes: "WindFormer-style or PatchTST-style comparison after graph model is stable"
+
+training:
+  loss_candidates: [huber, mse]
+  optimizer: adamw
+  learning_rate: 0.001
+  early_stopping_patience: 10
+  local_debug_epochs: 50
+

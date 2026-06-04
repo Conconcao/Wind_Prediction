@@ -1,8 +1,14 @@
 # Job Notes
 
-- `jobs/slurm/` 用于存放通用 `slurm` 作业脚本。
-- `jobs/templates/` 用于存放可复用的作业模板。
-- 服务器工作目录固定为 `s502024280003/gpfs`。
-- 每次作业最多申请 `2` 块 GPU。
-- 作业脚本中应明确输入、输出、日志和环境初始化路径。
-
+- `jobs/slurm/` stores reusable Slurm job scripts.
+- `jobs/templates/` stores reusable job templates.
+- The server working root is `/s502024280003/gpfs`.
+- Each job should request at most `2` GPUs.
+- Job scripts should always make input paths, output paths, log paths, and environment activation explicit.
+- Current xinyang graph-model jobs:
+  - `jobs/slurm/xinyang_build_store_full.slurm`
+  - `jobs/slurm/xinyang_train_gwnet_full.slurm`
+- Recommended server repo root:
+  - `/s502024280003/gpfs/Wind_Prediction`
+- Recommended xinyang data upload folder:
+  - `/s502024280003/gpfs/Wind_Prediction/data/xinyang/`

@@ -1,0 +1,74 @@
+experiment:
+  name: xinyang_15min_wind_speed
+  site: xinyang
+  task: turbine_level_15min_ahead_wind_speed
+  target_column: "平均风速"
+  horizon_steps: 1
+  base_resolution_minutes: 15
+
+data:
+  scada_15min: "C:/Users/caosh/Desktop/WTPC/data/xinyang/ALL_TURBINES_15min_202501-202512_QC2.parquet"
+  scada_1min: "C:/Users/caosh/Desktop/WTPC/data/xinyang/ALL_TURBINES_1min_202501-202512.parquet"
+  met_tower: "C:/Users/caosh/Desktop/WTPC/data/xinyang/pre_QC_气象观测数据.xlsx"
+  turbine_meta: "C:/Users/caosh/Desktop/WTPC/data/xinyang/风机基本信息.csv"
+  optional_nwp_hourly: "C:/Users/caosh/Desktop/WTPC/data/open_nwp/gdex_gfs_xinyang_2025-07-01_2025-12-31_hourly.parquet"
+
+split:
+  method: chronological
+  ratio:
+    train: 0.7
+    val: 0.2
+    test: 0.1
+  train_start: "2025-01-01 00:15:00"
+  train_end: "2025-09-15 16:00:00"
+  val_start: "2025-09-15 16:15:00"
+  val_end: "2025-11-26 08:45:00"
+  test_start: "2025-11-26 09:00:00"
+  test_end: "2026-01-01 00:00:00"
+  warmup_steps_for_window_models: 96
+
+feature_sets:
+  F0_scada_15min:
+    - "平均风速"
+    - "最大风速"
+    - "最小风速"
+    - "风速标准差"
+    - "平均有功功率"
+    - "有功功率标准差"
+    - "平均风向"
+    - "风向标准差"
+    - "平均机舱方位角"
+    - "机舱方位角标准差"
+    - "cnt_raw"
+  F1_calendar:
+    - hour_sin
+    - hour_cos
+    - doy_sin
+    - doy_cos
+  F2_tower_met:
+    - pivot_long_to_wide_by_height
+    - include_missing_flags
+  F3_1min_derived:
+    windows: [15min, 30min, 60min]
+    stats: [mean, std, min, max, ramp]
+  F4_optional_nwp:
+    - ws10
+    - wd10
+    - ws100
+    - wd100
+    - u10
+    - v10
+    - u100
+    - v100
+
+evaluation:
+  metrics:
+    - mae
+    - rmse
+    - r2
+    - skill_score_vs_persistence
+  report_levels:
+    - turbine_macro
+    - farm_mean
+  avoid_metrics:
+    - mape

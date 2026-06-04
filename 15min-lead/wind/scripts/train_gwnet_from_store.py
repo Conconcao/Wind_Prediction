@@ -81,12 +81,14 @@ def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def main() -> None:
     args = parse_args()
     set_seed(args.seed)
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     store_dir = Path(args.store_dir)
     store = load_window_store(store_dir, mmap_mode="r")
@@ -291,6 +293,7 @@ def main() -> None:
         "graph_order": int(args.graph_order),
         "num_workers": int(args.num_workers),
         "stats_chunk_size": int(args.stats_chunk_size),
+        "device": str(device),
         "output_dir": str(output_dir),
     }
     (output_dir / "summary.json").write_text(

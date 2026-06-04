@@ -128,6 +128,8 @@ Supporting server-side files:
 
 - `15min-lead/wind/docs/xinyang_server_layout.md`
 - `15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml`
+- `jobs/lsf/xinyang_build_store_full.lsf`
+- `jobs/lsf/xinyang_train_gwnet_full.lsf`
 - `jobs/slurm/xinyang_build_store_full.slurm`
 - `jobs/slurm/xinyang_train_gwnet_full.slurm`
 

@@ -19,8 +19,8 @@ Required files:
 
 - `ALL_TURBINES_15min_202501-202512_QC2.parquet`
 - `ALL_TURBINES_1min_202501-202512.parquet`
-- `pre_QC_姘旇薄瑙傛祴鏁版嵁.xlsx`
-- `椋庢満鍩烘湰淇℃伅.csv`
+- `pre_QC_气象观测数据.xlsx`
+- `风机基本信息.csv`
 
 Optional for later ablations:
 
@@ -29,11 +29,13 @@ Optional for later ablations:
 ## First server-side jobs
 
 - build the full disk-backed store:
-  `jobs/slurm/xinyang_build_store_full.slurm`
+  `jobs/lsf/xinyang_build_store_full.lsf`
 - train the Graph WaveNet style model:
-  `jobs/slurm/xinyang_train_gwnet_full.slurm`
+  `jobs/lsf/xinyang_train_gwnet_full.lsf`
 
 ## Notes
 
 - Both scripts request `1` GPU, which stays within the project rule of at most `2` GPUs per job.
-- Adjust the environment activation section in the job scripts if the server uses a different Python or Conda setup.
+- The current LSF scripts assume the server scheduler is `bsub` / `LSF`.
+- The current LSF scripts try to activate the `AIRU-WRF-torch` Conda environment by default.
+- Adjust the queue name, GPU resource syntax, or environment activation section if the server uses a different local convention.

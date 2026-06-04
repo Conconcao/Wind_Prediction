@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from xinyang_wind15.features import build_supervised_frame, build_timestep_feature_frame
 from xinyang_wind15.graph import build_correlation_adjacency, build_graph_wavenet_supports
-from xinyang_wind15.loading import build_scada_1min_aggregates
+from xinyang_wind15.loading import _resolve_input_path, build_scada_1min_aggregates
 from xinyang_wind15.settings import SplitBounds
 from xinyang_wind15.windows import build_spatiotemporal_windows, estimate_dense_window_bytes
 
@@ -151,3 +152,24 @@ def test_correlation_adjacency_and_support_deduplication() -> None:
 
     supports = build_graph_wavenet_supports(adjacency)
     assert len(supports) == 1
+
+
+def test_resolve_input_path_recovers_from_mojibake_like_names(tmp_path) -> None:
+    tower_file = tmp_path / "pre_QC_气象观测数据.xlsx"
+    turbine_meta_file = tmp_path / "风机基本信息.csv"
+    tower_file.write_bytes(b"placeholder")
+    turbine_meta_file.write_text("turbine_id,longitude_deg,latitude_deg\nT01,120.0,33.0\n", encoding="utf-8")
+
+    with pytest.warns(RuntimeWarning, match="Input path not found for tower_met"):
+        resolved_tower = _resolve_input_path(
+            tmp_path / "pre_QC_姘旇薄瑙傛祴鏁版嵁.xlsx",
+            kind="tower_met",
+        )
+    with pytest.warns(RuntimeWarning, match="Input path not found for turbine_meta"):
+        resolved_meta = _resolve_input_path(
+            tmp_path / "椋庢満鍩烘湰淇℃伅.csv",
+            kind="turbine_meta",
+        )
+
+    assert resolved_tower == tower_file
+    assert resolved_meta == turbine_meta_file

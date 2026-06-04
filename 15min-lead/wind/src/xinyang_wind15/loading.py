@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Iterable, Sequence
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,42 @@ from .schema import (
     RAW_TOWER_TO_CANONICAL,
     TOWER_WIDE_VARIABLES,
 )
+
+
+_FALLBACK_PATTERNS: dict[str, tuple[str, ...]] = {
+    "scada_15min": ("ALL_TURBINES_15min_*.parquet",),
+    "scada_1min": ("ALL_TURBINES_1min_*.parquet",),
+    "tower_met": ("pre_QC*.xlsx", "*气象*观测*.xlsx"),
+    "turbine_meta": ("*风机基本信息*.csv",),
+}
+
+
+def _resolve_input_path(path: str | Path, *, kind: str) -> Path:
+    resolved = Path(path)
+    if resolved.exists():
+        return resolved
+
+    parent = resolved.parent
+    if not parent.exists():
+        raise FileNotFoundError(f"Missing input path and parent directory: {resolved}")
+
+    for pattern in _FALLBACK_PATTERNS.get(kind, ()):
+        candidates = sorted(candidate for candidate in parent.glob(pattern) if candidate.is_file())
+        if candidates:
+            replacement = candidates[0]
+            warnings.warn(
+                f"Input path not found for {kind}: {resolved}. "
+                f"Using fallback file: {replacement}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return replacement
+
+    available = ", ".join(sorted(candidate.name for candidate in parent.iterdir() if candidate.is_file()))
+    raise FileNotFoundError(
+        f"Input path not found for {kind}: {resolved}. "
+        f"Available files under {parent}: {available}"
+    )
 
 
 def _filter_time_tail(
@@ -44,7 +81,8 @@ def load_scada_15min(
     max_turbines: int | None = None,
     tail_timestamps: int | None = None,
 ) -> pd.DataFrame:
-    df = pd.read_parquet(path)
+    resolved_path = _resolve_input_path(path, kind="scada_15min")
+    df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_15MIN_TO_CANONICAL)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = _filter_turbines(df, "turbine_id", max_turbines)
@@ -59,7 +97,8 @@ def load_scada_1min(
     max_turbines: int | None = None,
     tail_timestamps: int | None = None,
 ) -> pd.DataFrame:
-    df = pd.read_parquet(path)
+    resolved_path = _resolve_input_path(path, kind="scada_1min")
+    df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_1MIN_TO_CANONICAL)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = _filter_turbines(df, "turbine_id", max_turbines)
@@ -136,14 +175,16 @@ def build_scada_1min_aggregates(
 
 
 def load_turbine_metadata(path: str | Path) -> pd.DataFrame:
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    resolved_path = _resolve_input_path(path, kind="turbine_meta")
+    df = pd.read_csv(resolved_path, encoding="utf-8-sig")
     df["longitude_deg"] = df["longitude_deg"].astype(float)
     df["latitude_deg"] = df["latitude_deg"].astype(float)
     return df.sort_values("turbine_id").reset_index(drop=True)
 
 
 def load_tower_met_long(path: str | Path) -> pd.DataFrame:
-    df = pd.read_excel(path, sheet_name="data_preQC")
+    resolved_path = _resolve_input_path(path, kind="tower_met")
+    df = pd.read_excel(resolved_path, sheet_name="data_preQC")
     df = df.rename(columns=RAW_TOWER_TO_CANONICAL)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["height_m"] = df["height_m"].astype(int)

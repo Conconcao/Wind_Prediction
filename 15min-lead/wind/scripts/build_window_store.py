@@ -14,6 +14,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from xinyang_wind15.features import build_timestep_feature_frame  # noqa: E402
+from xinyang_wind15.feature_presets import resolve_feature_columns  # noqa: E402
 from xinyang_wind15.graph import (  # noqa: E402
     build_correlation_adjacency,
     build_distance_adjacency,
@@ -46,7 +47,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--feature-columns",
         nargs="+",
-        default=["ws_mean", "power_mean", "wd_mean", "nacelle_mean", "ws_std"],
+        default=None,
+    )
+    parser.add_argument(
+        "--feature-preset",
+        default="default_multivariate",
+        choices=["default_multivariate", "hub_ws_only", "scada_core"],
     )
     parser.add_argument("--include-tower", action="store_true")
     parser.add_argument("--include-1min", action="store_true")
@@ -81,7 +87,10 @@ def main() -> None:
         tower_wide=tower_wide,
         one_min_agg=one_min_agg,
     )
-    feature_columns = list(args.feature_columns)
+    feature_columns = resolve_feature_columns(
+        feature_preset=args.feature_preset,
+        feature_columns=args.feature_columns,
+    )
     if args.include_tower:
         feature_columns.extend(
             col for col in feature_frame.columns if col.startswith("tower_")
@@ -130,6 +139,7 @@ def main() -> None:
         "correlation_adjacency_path": str(out_dir / "correlation_adjacency.npy"),
         "include_tower": bool(args.include_tower),
         "include_1min": bool(args.include_1min),
+        "feature_preset": str(args.feature_preset),
         "output_dir": str(out_dir),
     }
     (out_dir / "summary.json").write_text(

@@ -58,5 +58,6 @@ def test_package_remote_run_collects_expected_summary_files(tmp_path: Path) -> N
     manifest_path = run_dir / "manifest.json"
     loaded_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert loaded_manifest["run_name"] == "xinyang_gwnet_5934"
+    assert loaded_manifest["log_stem"] == "xinyang_gwnet_full"
     assert any(item.endswith("gwnet_baseline.pt") for item in loaded_manifest["excluded_large_files"])
     assert manifest["output_dir"] == str(run_dir)

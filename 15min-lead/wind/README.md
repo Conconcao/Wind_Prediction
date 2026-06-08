@@ -43,6 +43,7 @@ experiments on the `xinyang` wind farm.
 - `scripts/build_window_store.py`
   - writes a time-major disk-backed feature store plus valid window indices
   - intended for larger deep-learning runs where dense window materialization is too expensive
+  - supports feature presets such as `default_multivariate`, `hub_ws_only`, and `scada_core`
 - `scripts/train_gru_baseline.py`
   - trains a local multi-turbine GRU baseline on windowed data
   - supports the same `--include-tower` and `--include-1min` feature ablations
@@ -153,6 +154,34 @@ the store summary, and the last log lines into
 `15min-lead/wind/results/remote_runs/<run_name>/`. It intentionally does
 not copy large files such as `gwnet_baseline.pt` or the disk-backed store
 arrays.
+
+## Recommended pure joint-time-series run
+
+For the next xinyang baseline-comparison round, the most targeted setup
+is joint modeling across all `46` turbines using only hub-height wind
+speed history:
+
+- node feature: `ws_mean` only
+- target: next-step `ws_mean`
+- topology: `distance + correlation` supports
+- no tower features
+- no `1-minute` aggregate features
+
+Server-side `LSF` entry points for this setup:
+
+- `jobs/lsf/xinyang_build_store_hubws_joint.lsf`
+- `jobs/lsf/xinyang_train_gwnet_hubws_joint.lsf`
+
+After the training job finishes, package the run with:
+
+```bash
+python 15min-lead/wind/scripts/package_remote_run.py \
+  --job-id <jobid> \
+  --run-name xinyang_gwnet_hubws_<jobid> \
+  --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_hubws_joint_run \
+  --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint \
+  --log-stem xinyang_gwnet_hubws
+```
 
 ## Next implementation steps
 

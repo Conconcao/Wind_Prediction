@@ -53,6 +53,11 @@ def parse_args() -> argparse.Namespace:
         default=200,
         help="Number of tail lines to keep from stdout/stderr logs.",
     )
+    parser.add_argument(
+        "--log-stem",
+        default="xinyang_gwnet_full",
+        help="Job log stem between the job id and .out/.err.",
+    )
     return parser.parse_args()
 
 
@@ -68,6 +73,7 @@ def main() -> None:
             log_dir=Path(args.log_dir),
             output_root=Path(args.output_root),
             max_log_lines=int(args.max_log_lines),
+            log_stem=str(args.log_stem),
         )
     )
     print(json.dumps(manifest, indent=2))

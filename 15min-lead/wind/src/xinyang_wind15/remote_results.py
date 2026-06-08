@@ -28,6 +28,7 @@ class RemoteRunPackageSpec:
     output_root: Path
     max_log_lines: int = 200
     train_files: tuple[str, ...] = DEFAULT_TRAIN_FILES
+    log_stem: str = "xinyang_gwnet_full"
 
 
 def tail_lines(path: str | Path, max_lines: int) -> str:
@@ -73,8 +74,8 @@ def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
     store_summary_dest = output_dir / "store_summary.json"
     store_summary_dest.write_bytes(store_summary_src.read_bytes())
 
-    out_log_src = log_dir / f"{spec.job_id}.xinyang_gwnet_full.out"
-    err_log_src = log_dir / f"{spec.job_id}.xinyang_gwnet_full.err"
+    out_log_src = log_dir / f"{spec.job_id}.{spec.log_stem}.out"
+    err_log_src = log_dir / f"{spec.job_id}.{spec.log_stem}.err"
     if not out_log_src.exists():
         raise FileNotFoundError(f"Missing job stdout log: {out_log_src}")
     if not err_log_src.exists():
@@ -99,6 +100,7 @@ def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
         "log_dir": str(log_dir),
         "output_dir": str(output_dir),
         "max_log_lines": int(spec.max_log_lines),
+        "log_stem": spec.log_stem,
         "copied_train_files": copied_train,
         "store_summary": {
             "source": str(store_summary_src),

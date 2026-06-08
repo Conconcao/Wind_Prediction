@@ -10,6 +10,8 @@
 - Current xinyang graph-model jobs for `bsub` / `LSF`:
   - `jobs/lsf/xinyang_build_store_full.lsf`
   - `jobs/lsf/xinyang_train_gwnet_full.lsf`
+  - `jobs/lsf/xinyang_build_store_hubws_joint.lsf`
+  - `jobs/lsf/xinyang_train_gwnet_hubws_joint.lsf`
 - Optional cross-cluster Slurm variants:
   - `jobs/slurm/xinyang_build_store_full.slurm`
   - `jobs/slurm/xinyang_train_gwnet_full.slurm`

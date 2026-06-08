@@ -54,6 +54,9 @@ experiments on the `xinyang` wind farm.
 - `scripts/train_gwnet_from_store.py`
   - trains a Graph WaveNet style model from the disk-backed store and saved adjacency
   - supports `distance` or `distance + correlation` fixed graph supports
+- `scripts/package_remote_run.py`
+  - packages server-side `GraphWaveNet` summary files and tailed logs into a repo-safe folder
+  - excludes large binaries and raw store arrays so the packaged result can be committed
 
 ## Latest local debug results
 
@@ -132,6 +135,24 @@ Supporting server-side files:
 - `jobs/lsf/xinyang_train_gwnet_full.lsf`
 - `jobs/slurm/xinyang_build_store_full.slurm`
 - `jobs/slurm/xinyang_train_gwnet_full.slurm`
+
+## Packaging remote results
+
+After a server-side `GraphWaveNet` run finishes, package the lightweight
+result summary back into the repo before pushing:
+
+```bash
+python 15min-lead/wind/scripts/package_remote_run.py --job-id 5934
+git add 15min-lead/wind/results/remote_runs/xinyang_gwnet_5934
+git commit -m "Add xinyang gwnet run 5934 summaries"
+git push
+```
+
+The packaging script copies metrics, training history, per-turbine CSVs,
+the store summary, and the last log lines into
+`15min-lead/wind/results/remote_runs/<run_name>/`. It intentionally does
+not copy large files such as `gwnet_baseline.pt` or the disk-backed store
+arrays.
 
 ## Next implementation steps
 

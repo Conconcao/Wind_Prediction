@@ -24,6 +24,7 @@ from xinyang_wind15.sequence import (  # noqa: E402
     compute_standardization_stats_from_store,
     evaluate_window_model,
     make_loader,
+    masked_mean_loss,
     save_checkpoint,
 )
 from xinyang_wind15.tcn import MultiTurbineTCN  # noqa: E402
@@ -82,6 +83,7 @@ def main() -> None:
     metadata = store["metadata"]
     feature_tensor = store["feature_tensor"]
     target_matrix = store["target_matrix"]
+    target_mask = store["target_mask"]
     origin_indices = np.asarray(store["origin_indices"], dtype=np.int64)
     split_labels = np.asarray(store["split_labels"])
     lookback_steps = int(metadata["lookback_steps"])
@@ -104,6 +106,7 @@ def main() -> None:
         train_origins,
         lookback_steps=lookback_steps,
         horizon_steps=horizon_steps,
+        target_mask=target_mask,
         chunk_size=args.stats_chunk_size,
     )
     train_dataset = WindowStoreDataset(
@@ -112,6 +115,7 @@ def main() -> None:
         train_origins,
         lookback_steps=lookback_steps,
         horizon_steps=horizon_steps,
+        target_mask=target_mask,
         stats=stats,
     )
     val_dataset = WindowStoreDataset(
@@ -120,6 +124,7 @@ def main() -> None:
         val_origins,
         lookback_steps=lookback_steps,
         horizon_steps=horizon_steps,
+        target_mask=target_mask,
         stats=stats,
     )
     test_dataset = WindowStoreDataset(
@@ -128,6 +133,7 @@ def main() -> None:
         test_origins,
         lookback_steps=lookback_steps,
         horizon_steps=horizon_steps,
+        target_mask=target_mask,
         stats=stats,
     )
 
@@ -158,7 +164,7 @@ def main() -> None:
         dropout=args.dropout,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
-    loss_fn = nn.HuberLoss()
+    loss_fn = nn.HuberLoss(reduction="none")
 
     best_val_rmse = float("inf")
     best_state = None
@@ -166,12 +172,13 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         model.train()
         train_losses = []
-        for x_batch, y_batch in train_loader:
+        for x_batch, y_batch, y_mask_batch in train_loader:
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
+            y_mask_batch = y_mask_batch.to(device)
             optimizer.zero_grad()
             pred = model(x_batch)
-            loss = loss_fn(pred, y_batch)
+            loss = masked_mean_loss(loss_fn(pred, y_batch), y_mask_batch)
             loss.backward()
             optimizer.step()
             train_losses.append(float(loss.item()))
@@ -239,6 +246,8 @@ def main() -> None:
         "horizon_steps": horizon_steps,
         "feature_columns": feature_columns,
         "turbine_order": turbine_order,
+        "min_target_coverage": float(metadata.get("min_target_coverage", 1.0)),
+        "min_target_count": int(metadata.get("min_target_count", len(turbine_order))),
         "channel_sizes": [int(width) for width in args.channels],
         "kernel_size": int(args.kernel_size),
         "num_workers": int(args.num_workers),

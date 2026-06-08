@@ -9,13 +9,22 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
 def regression_summary(y_true: pd.Series, y_pred: pd.Series) -> dict[str, float]:
+    if len(y_true) == 0:
+        return {
+            "mae": float("nan"),
+            "rmse": float("nan"),
+            "r2": float("nan"),
+            "count": 0,
+        }
+
     mae = float(mean_absolute_error(y_true, y_pred))
     rmse = math.sqrt(float(mean_squared_error(y_true, y_pred)))
-    r2 = float(r2_score(y_true, y_pred))
+    r2 = float("nan") if len(y_true) < 2 else float(r2_score(y_true, y_pred))
     return {
         "mae": mae,
         "rmse": rmse,
         "r2": r2,
+        "count": int(len(y_true)),
     }
 
 
@@ -49,6 +58,5 @@ def summarize_predictions(
         "mae_macro": float(grouped_df["mae"].mean()),
         "rmse_macro": float(grouped_df["rmse"].mean()),
         "r2_macro": float(grouped_df["r2"].mean()),
-        "count": int(len(prediction_frame)),
     }
     return grouped_df, overall

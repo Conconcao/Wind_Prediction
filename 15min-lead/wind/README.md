@@ -31,6 +31,7 @@ experiments on the `xinyang` wind farm.
 - Disk-backed window-store path implemented for larger deep-learning runs
 - Graph WaveNet style local training path implemented on top of the disk-backed store
 - Correlation support graph and server full-run templates prepared for the graph model
+- Window-store validity logic updated to use causal feature filling plus masked targets
 
 ## Available scripts
 
@@ -44,6 +45,7 @@ experiments on the `xinyang` wind farm.
   - writes a time-major disk-backed feature store plus valid window indices
   - intended for larger deep-learning runs where dense window materialization is too expensive
   - supports feature presets such as `default_multivariate`, `hub_ws_only`, and `scada_core`
+  - now supports `--min-target-coverage` to avoid discarding windows when only a subset of turbine targets is missing
 - `scripts/train_gru_baseline.py`
   - trains a local multi-turbine GRU baseline on windowed data
   - supports the same `--include-tower` and `--include-1min` feature ablations
@@ -105,6 +107,12 @@ full `46`-turbine xinyang farm is roughly:
 
 - dense materialized windows: about `33.93 GiB`
 - disk-backed feature store: about `1.07 GiB`
+
+The current store/training path also treats target availability with an
+explicit mask instead of requiring every turbine target to be present at
+every forecast step. On the full-farm `hub_ws_only` setup, this raises
+the valid-window count from the earlier `406`-window bottleneck to
+`27899` windows when `--min-target-coverage 0.85` is used.
 
 On the current enriched `4`-turbine debug subset, the deep-model ordering is:
 

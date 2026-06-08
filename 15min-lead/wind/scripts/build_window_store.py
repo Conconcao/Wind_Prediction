@@ -56,6 +56,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--include-tower", action="store_true")
     parser.add_argument("--include-1min", action="store_true")
+    parser.add_argument(
+        "--min-target-coverage",
+        type=float,
+        default=0.85,
+        help="Minimum fraction of turbine targets that must be observed at the forecast step.",
+    )
     parser.add_argument("--max-turbines", type=int, default=None)
     parser.add_argument("--tail-timestamps", type=int, default=None)
     return parser.parse_args()
@@ -110,6 +116,7 @@ def main() -> None:
         horizon_steps=settings.horizon_steps,
         split_bounds=settings.split_bounds,
         output_dir=out_dir,
+        min_target_coverage=args.min_target_coverage,
     )
 
     turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
@@ -140,6 +147,7 @@ def main() -> None:
         "include_tower": bool(args.include_tower),
         "include_1min": bool(args.include_1min),
         "feature_preset": str(args.feature_preset),
+        "min_target_coverage": float(args.min_target_coverage),
         "output_dir": str(out_dir),
     }
     (out_dir / "summary.json").write_text(

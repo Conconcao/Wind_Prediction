@@ -40,6 +40,7 @@ class WindowStoreDataset(Dataset):
         *,
         lookback_steps: int,
         horizon_steps: int,
+        target_mask: np.ndarray | None = None,
         stats: StandardizationStats | None = None,
     ) -> None:
         self.feature_tensor = feature_tensor
@@ -47,12 +48,13 @@ class WindowStoreDataset(Dataset):
         self.origin_indices = np.asarray(origin_indices, dtype=np.int64)
         self.lookback_steps = int(lookback_steps)
         self.horizon_steps = int(horizon_steps)
+        self.target_mask = target_mask
         self.stats = stats
 
     def __len__(self) -> int:
         return int(len(self.origin_indices))
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         origin_idx = int(self.origin_indices[idx])
         start_idx = origin_idx - self.lookback_steps + 1
         target_idx = origin_idx + self.horizon_steps
@@ -66,14 +68,28 @@ class WindowStoreDataset(Dataset):
             dtype=np.float32,
             copy=True,
         )
+        if self.target_mask is None:
+            y_mask = np.ones_like(y, dtype=bool)
+        else:
+            y_mask = np.array(
+                self.target_mask[target_idx],
+                dtype=bool,
+                copy=True,
+            )
+        y_filled = np.where(y_mask, y, 0.0).astype(np.float32, copy=False)
         if self.stats is not None:
             x = (
                 (x - self.stats.x_mean[0]) / self.stats.x_std[0]
             ).astype(np.float32, copy=False)
-            y = (
-                (y - self.stats.y_mean[0]) / self.stats.y_std[0]
+            y_filled = np.where(y_mask, y, self.stats.y_mean[0]).astype(np.float32, copy=False)
+            y_filled = (
+                (y_filled - self.stats.y_mean[0]) / self.stats.y_std[0]
             ).astype(np.float32, copy=False)
-        return torch.from_numpy(x), torch.from_numpy(y)
+        return (
+            torch.from_numpy(x),
+            torch.from_numpy(y_filled),
+            torch.from_numpy(y_mask),
+        )
 
 
 @dataclass(frozen=True)
@@ -151,6 +167,7 @@ def compute_standardization_stats_from_store(
     *,
     lookback_steps: int,
     horizon_steps: int,
+    target_mask: np.ndarray | None = None,
     chunk_size: int = 32,
 ) -> StandardizationStats:
     origin_indices = np.asarray(origin_indices, dtype=np.int64)
@@ -164,7 +181,7 @@ def compute_standardization_stats_from_store(
     sum_y = np.zeros((1, n_turbines), dtype=np.float64)
     sum_y2 = np.zeros((1, n_turbines), dtype=np.float64)
     count_x = 0
-    count_y = 0
+    count_y = np.zeros((1, n_turbines), dtype=np.float64)
 
     for start in range(0, len(origin_indices), chunk_size):
         chunk_origins = origin_indices[start : start + chunk_size]
@@ -183,23 +200,34 @@ def compute_standardization_stats_from_store(
             dtype=np.float32,
         )
         x_chunk64 = x_chunk.astype(np.float64, copy=False)
-        y_chunk64 = y_chunk.astype(np.float64, copy=False)
+        if target_mask is None:
+            y_mask_chunk = np.ones_like(y_chunk, dtype=bool)
+        else:
+            y_mask_chunk = np.asarray(
+                target_mask[chunk_origins + horizon_steps],
+                dtype=bool,
+            )
+        y_chunk64 = np.where(y_mask_chunk, y_chunk, 0.0).astype(np.float64, copy=False)
         sum_x += x_chunk64.sum(axis=(0, 1, 2), keepdims=True)
         sum_x2 += np.square(x_chunk64).sum(axis=(0, 1, 2), keepdims=True)
         sum_y += y_chunk64.sum(axis=0, keepdims=True)
         sum_y2 += np.square(y_chunk64).sum(axis=0, keepdims=True)
         count_x += int(np.prod(x_chunk.shape[:3]))
-        count_y += int(y_chunk.shape[0])
+        count_y += y_mask_chunk.sum(axis=0, keepdims=True, dtype=np.float64)
 
     x_mean = sum_x / count_x
     x_var = np.maximum((sum_x2 / count_x) - np.square(x_mean), 0.0)
     x_std = np.sqrt(x_var)
     x_std = np.where(x_std < 1e-6, 1.0, x_std)
 
-    y_mean = sum_y / count_y
-    y_var = np.maximum((sum_y2 / count_y) - np.square(y_mean), 0.0)
+    y_mean = np.divide(sum_y, count_y, out=np.zeros_like(sum_y), where=count_y > 0)
+    y_var = np.maximum(
+        np.divide(sum_y2, count_y, out=np.zeros_like(sum_y2), where=count_y > 0)
+        - np.square(y_mean),
+        0.0,
+    )
     y_std = np.sqrt(y_var)
-    y_std = np.where(y_std < 1e-6, 1.0, y_std)
+    y_std = np.where((count_y < 2) | (y_std < 1e-6), 1.0, y_std)
 
     return StandardizationStats(
         x_mean=x_mean.astype(np.float32),
@@ -221,34 +249,52 @@ def evaluate_window_model(
     model.eval()
     all_preds = []
     all_truth = []
+    all_masks = []
     with torch.no_grad():
-        for x_batch, y_batch in loader:
+        for batch in loader:
+            if len(batch) == 3:
+                x_batch, y_batch, y_mask_batch = batch
+            else:
+                x_batch, y_batch = batch
+                y_mask_batch = torch.ones_like(y_batch, dtype=torch.bool)
             x_batch = x_batch.to(device)
             pred = model(x_batch).cpu().numpy()
             all_preds.append(pred)
             all_truth.append(y_batch.numpy())
+            all_masks.append(y_mask_batch.numpy().astype(bool, copy=False))
     y_pred_scaled = np.concatenate(all_preds, axis=0)
     y_true_scaled = np.concatenate(all_truth, axis=0)
+    y_mask = np.concatenate(all_masks, axis=0).astype(bool, copy=False)
     y_pred = inverse_targets(y_pred_scaled, stats)
     y_true = inverse_targets(y_true_scaled, stats)
 
     per_turbine_rows = []
     for idx, turbine_id in enumerate(turbine_order):
+        turbine_mask = y_mask[:, idx]
         metrics = regression_summary(
-            pd.Series(y_true[:, idx]),
-            pd.Series(y_pred[:, idx]),
+            pd.Series(y_true[turbine_mask, idx]),
+            pd.Series(y_pred[turbine_mask, idx]),
         )
         per_turbine_rows.append({"turbine_id": turbine_id, **metrics})
     per_turbine_df = pd.DataFrame(per_turbine_rows)
+    observed_mask = y_mask.reshape(-1)
     overall = regression_summary(
-        pd.Series(y_true.reshape(-1)),
-        pd.Series(y_pred.reshape(-1)),
+        pd.Series(y_true.reshape(-1)[observed_mask]),
+        pd.Series(y_pred.reshape(-1)[observed_mask]),
     )
-    overall["mae_macro"] = float(per_turbine_df["mae"].mean())
-    overall["rmse_macro"] = float(per_turbine_df["rmse"].mean())
-    overall["r2_macro"] = float(per_turbine_df["r2"].mean())
+    overall["mae_macro"] = float(per_turbine_df["mae"].mean(skipna=True))
+    overall["rmse_macro"] = float(per_turbine_df["rmse"].mean(skipna=True))
+    overall["r2_macro"] = float(per_turbine_df["r2"].mean(skipna=True))
     overall["split"] = split_name
     return overall, per_turbine_df
+
+
+def masked_mean_loss(loss_tensor: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    mask = mask.to(loss_tensor.device, dtype=loss_tensor.dtype)
+    valid_count = mask.sum()
+    if valid_count.item() <= 0:
+        raise ValueError("Masked loss received a batch with no valid targets.")
+    return (loss_tensor * mask).sum() / valid_count
 
 
 def save_checkpoint(model: nn.Module, output_path: str | Path) -> None:

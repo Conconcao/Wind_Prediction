@@ -74,10 +74,18 @@ def compute_valid_window_indices(
     *,
     lookback_steps: int,
     horizon_steps: int,
+    target_mask: np.ndarray | None = None,
+    min_target_count: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     n_timestamps = int(feature_tensor.shape[0])
     if n_timestamps != int(target_matrix.shape[0]):
         raise ValueError("feature_tensor and target_matrix must share the time axis length.")
+    if target_mask is None:
+        target_mask = ~np.isnan(target_matrix)
+    if n_timestamps != int(target_mask.shape[0]):
+        raise ValueError("target_mask must share the time axis length with feature_tensor.")
+    if int(target_mask.shape[1]) != int(target_matrix.shape[1]):
+        raise ValueError("target_mask and target_matrix must share the turbine axis length.")
     candidate_origins = np.arange(
         lookback_steps - 1,
         n_timestamps - horizon_steps,
@@ -90,7 +98,6 @@ def compute_valid_window_indices(
         )
 
     invalid_feature_steps = np.isnan(feature_tensor).any(axis=(1, 2)).astype(np.int64)
-    invalid_target_steps = np.isnan(target_matrix).any(axis=1)
     invalid_prefix = np.concatenate(
         [np.zeros(1, dtype=np.int64), invalid_feature_steps.cumsum()],
     )
@@ -99,7 +106,12 @@ def compute_valid_window_indices(
         invalid_prefix[candidate_origins + 1] - invalid_prefix[window_starts]
     )
     target_indices = candidate_origins + horizon_steps
-    valid_mask = (invalid_counts == 0) & (~invalid_target_steps[target_indices])
+    available_target_counts = target_mask.astype(np.int64).sum(axis=1)
+    if min_target_count is None:
+        min_target_count = int(target_mask.shape[1])
+    valid_mask = (invalid_counts == 0) & (
+        available_target_counts[target_indices] >= int(min_target_count)
+    )
     return candidate_origins[valid_mask], target_indices[valid_mask]
 
 

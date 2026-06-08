@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import torch
 
 from xinyang_wind15.sequence import (
     WindowStoreDataset,
@@ -79,8 +80,72 @@ def test_window_store_round_trip_and_dataset(tmp_path) -> None:
         train_origins,
         lookback_steps=3,
         horizon_steps=1,
+        target_mask=store["target_mask"],
         stats=stats,
     )
-    x, y = dataset[0]
+    x, y, y_mask = dataset[0]
     assert tuple(x.shape) == (3, 2, 2)
     assert tuple(y.shape) == (2,)
+    assert tuple(y_mask.shape) == (2,)
+    assert y_mask.dtype == torch.bool
+
+
+def test_window_store_supports_masked_targets_and_causal_fill(tmp_path) -> None:
+    scada = make_synthetic_scada()
+    scada = scada.loc[
+        ~(
+            (scada["turbine_id"] == "T02")
+            & (scada["timestamp"] == pd.Timestamp("2025-01-01 00:30:00"))
+        )
+    ].copy()
+    bounds = SplitBounds(
+        train_start=pd.Timestamp("2025-01-01 00:30:00"),
+        train_end=pd.Timestamp("2025-01-01 01:15:00"),
+        val_start=pd.Timestamp("2025-01-01 01:30:00"),
+        val_end=pd.Timestamp("2025-01-01 01:45:00"),
+        test_start=pd.Timestamp("2025-01-01 02:00:00"),
+        test_end=pd.Timestamp("2025-01-01 02:45:00"),
+    )
+    metadata = write_window_store(
+        scada,
+        feature_columns=["ws_mean"],
+        target_column="ws_mean",
+        lookback_steps=2,
+        horizon_steps=1,
+        split_bounds=bounds,
+        output_dir=tmp_path,
+        min_target_coverage=0.5,
+    )
+    assert metadata["min_target_count"] == 1
+    assert metadata["n_valid_windows"] == 10
+
+    store = load_window_store(tmp_path, mmap_mode="r")
+    assert store["target_mask"].shape == (12, 2)
+    assert bool(store["target_mask"][2, 0])
+    assert not bool(store["target_mask"][2, 1])
+    assert float(store["feature_tensor"][2, 1, 0]) == float(store["feature_tensor"][1, 1, 0])
+
+    train_origins = store["origin_indices"][store["split_labels"] == "train"]
+    stats = compute_standardization_stats_from_store(
+        store["feature_tensor"],
+        store["target_matrix"],
+        train_origins,
+        lookback_steps=2,
+        horizon_steps=1,
+        target_mask=store["target_mask"],
+        chunk_size=2,
+    )
+    dataset = WindowStoreDataset(
+        store["feature_tensor"],
+        store["target_matrix"],
+        train_origins,
+        lookback_steps=2,
+        horizon_steps=1,
+        target_mask=store["target_mask"],
+        stats=stats,
+    )
+    x, y, y_mask = dataset[0]
+    assert tuple(x.shape) == (2, 2, 1)
+    assert tuple(y.shape) == (2,)
+    assert y_mask.tolist() == [True, False]
+    assert float(y[1]) == 0.0

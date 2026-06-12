@@ -32,6 +32,8 @@ experiments on the `xinyang` wind farm.
 - Graph WaveNet style local training path implemented on top of the disk-backed store
 - Correlation support graph and server full-run templates prepared for the graph model
 - Window-store validity logic updated to use causal feature filling plus masked targets
+- AGCRN, MTGNN, and ModernTCN experiment entry points added
+- Single-turbine GRU/TCN control runs can now be launched by turbine id
 
 ## Available scripts
 
@@ -57,6 +59,13 @@ experiments on the `xinyang` wind farm.
 - `scripts/train_gwnet_from_store.py`
   - trains a Graph WaveNet style model from the disk-backed store and saved adjacency
   - supports `distance` or `distance + correlation` fixed graph supports
+- `scripts/train_agcrn_from_store.py`
+  - trains an AGCRN-style adaptive graph recurrent model from the disk-backed store
+- `scripts/train_mtgnn_from_store.py`
+  - trains an MTGNN-style learned-graph temporal model from the disk-backed store
+- `scripts/train_moderntcn_from_store.py`
+  - trains a ModernTCN-style non-graph temporal model from the disk-backed store
+  - currently intended for `hub_ws_only` stores with one feature per turbine
 - `scripts/package_remote_run.py`
   - packages server-side `GraphWaveNet` summary files and tailed logs into a repo-safe folder
   - excludes large binaries and raw store arrays so the packaged result can be committed
@@ -179,6 +188,52 @@ Server-side `LSF` entry points for this setup:
 
 - `jobs/lsf/xinyang_build_store_hubws_joint.lsf`
 - `jobs/lsf/xinyang_train_gwnet_hubws_joint.lsf`
+- `jobs/lsf/xinyang_train_agcrn_hubws_joint.lsf`
+- `jobs/lsf/xinyang_train_mtgnn_hubws_joint.lsf`
+- `jobs/lsf/xinyang_train_moderntcn_hubws_joint.lsf`
+- `jobs/lsf/xinyang_train_gru_single_turbine.lsf`
+- `jobs/lsf/xinyang_train_tcn_single_turbine.lsf`
+
+## Single-turbine pure time-series controls
+
+Use the existing dense-window GRU and TCN scripts with `--turbine-id` to
+run one-turbine controls and check whether joint spatial modeling adds
+clear value for a selected machine. Example:
+
+```bash
+python 15min-lead/wind/scripts/train_gru_baseline.py \
+  --turbine-id S29 \
+  --feature-columns ws_mean \
+  --max-turbines 1
+
+python 15min-lead/wind/scripts/train_tcn_baseline.py \
+  --turbine-id S29 \
+  --feature-columns ws_mean \
+  --max-turbines 1
+```
+
+Server-side `LSF` single-turbine controls default to `S29`, but you can
+override the turbine id at submit time:
+
+```bash
+TURBINE_ID=S29 bsub < jobs/lsf/xinyang_train_gru_single_turbine.lsf
+TURBINE_ID=S29 bsub < jobs/lsf/xinyang_train_tcn_single_turbine.lsf
+```
+
+## Packaging non-GWNet runs
+
+The remote packaging script now also supports runs that do not have a
+disk-backed store summary, such as single-turbine dense-window GRU/TCN
+controls. Example:
+
+```bash
+python 15min-lead/wind/scripts/package_remote_run.py \
+  --job-id <jobid> \
+  --run-name xinyang_gru_single_s29_<jobid> \
+  --train-dir 15min-lead/wind/artifacts/server_runs/gru_single_S29 \
+  --log-stem xinyang_gru_single \
+  --skip-store-summary
+```
 
 After the training job finishes, package the run with:
 

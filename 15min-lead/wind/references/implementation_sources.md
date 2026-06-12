@@ -50,3 +50,22 @@ documentation instead of ad-hoc reimplementation where possible.
    - GitHub: <https://github.com/locuslab/TCN>
    - PyTorch Conv1d docs:
      <https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv1d.html>
+
+9. AGCRN reference
+   - GitHub: <https://github.com/LeiBAI/AGCRN>
+   - Reference model files:
+     <https://github.com/LeiBAI/AGCRN/blob/master/model/AGCRN.py>
+     <https://github.com/LeiBAI/AGCRN/blob/master/model/AGCRNCell.py>
+     <https://github.com/LeiBAI/AGCRN/blob/master/model/AGCN.py>
+
+10. MTGNN reference
+   - GitHub: <https://github.com/nnzhan/MTGNN>
+   - Reference model files:
+     <https://github.com/nnzhan/MTGNN/blob/master/net.py>
+     <https://github.com/nnzhan/MTGNN/blob/master/layer.py>
+
+11. ModernTCN reference
+   - GitHub: <https://github.com/luodhhh/ModernTCN>
+   - Reference model files:
+     <https://github.com/luodhhh/ModernTCN/blob/main/ModernTCN-short-term/models/ModernTCN.py>
+     <https://github.com/luodhhh/ModernTCN/blob/main/ModernTCN-short-term/models/ModernTCN_Layer.py>

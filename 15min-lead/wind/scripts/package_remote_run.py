@@ -38,6 +38,11 @@ def parse_args() -> argparse.Namespace:
         help="Directory containing the store summary.json.",
     )
     parser.add_argument(
+        "--skip-store-summary",
+        action="store_true",
+        help="Skip copying store_summary.json. Useful for single-turbine dense-window runs.",
+    )
+    parser.add_argument(
         "--log-dir",
         default="logs",
         help="Directory containing LSF stdout/stderr logs.",
@@ -69,11 +74,12 @@ def main() -> None:
             run_name=run_name,
             job_id=str(args.job_id),
             train_dir=Path(args.train_dir),
-            store_dir=Path(args.store_dir),
+            store_dir=None if args.skip_store_summary else Path(args.store_dir),
             log_dir=Path(args.log_dir),
             output_root=Path(args.output_root),
             max_log_lines=int(args.max_log_lines),
             log_stem=str(args.log_stem),
+            include_store_summary=not bool(args.skip_store_summary),
         )
     )
     print(json.dumps(manifest, indent=2))

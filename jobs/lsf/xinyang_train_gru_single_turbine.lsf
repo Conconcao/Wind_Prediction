@@ -1,0 +1,44 @@
+#!/bin/bash
+#BSUB -J xinyang_gru_single
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=24GB]"
+#BSUB -W 08:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gru_single.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gru_single.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+RUN_ROOT="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs"
+TURBINE_ID="${TURBINE_ID:-S29}"
+RUN_DIR="$RUN_ROOT/gru_single_${TURBINE_ID}"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_gru_baseline.py \
+  --split-config "$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml" \
+  --turbine-id "$TURBINE_ID" \
+  --feature-columns ws_mean \
+  --max-turbines 1 \
+  --batch-size 128 \
+  --epochs 30 \
+  --output-dir "$RUN_DIR"

@@ -1,0 +1,48 @@
+#!/bin/bash
+#BSUB -J xinyang_mtgnn_hubws
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_mtgnn_hubws.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_mtgnn_hubws.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/mtgnn_hubws_joint_run"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_mtgnn_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --epochs 30 \
+  --batch-size 64 \
+  --gcn-depth 2 \
+  --subgraph-size 20 \
+  --node-dim 40 \
+  --conv-channels 32 \
+  --residual-channels 32 \
+  --skip-channels 64 \
+  --end-channels 128 \
+  --layers 3 \
+  --output-dir "$RUN_DIR"

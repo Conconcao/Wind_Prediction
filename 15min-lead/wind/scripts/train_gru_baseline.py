@@ -63,6 +63,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--include-tower", action="store_true")
     parser.add_argument("--include-1min", action="store_true")
+    parser.add_argument(
+        "--turbine-id",
+        default=None,
+        help="Optional single-turbine experiment id, for example S29.",
+    )
     parser.add_argument("--max-turbines", type=int, default=4)
     parser.add_argument("--tail-timestamps", type=int, default=12000)
     parser.add_argument("--batch-size", type=int, default=64)
@@ -92,6 +97,7 @@ def main() -> None:
     scada = load_scada_15min(
         settings.data_paths["scada_15min"],
         max_turbines=args.max_turbines,
+        turbine_ids=[args.turbine_id] if args.turbine_id else None,
         tail_timestamps=args.tail_timestamps,
     )
     tower_wide = None
@@ -102,6 +108,7 @@ def main() -> None:
         scada_1min = load_scada_1min(
             settings.data_paths["scada_1min"],
             max_turbines=args.max_turbines,
+            turbine_ids=[args.turbine_id] if args.turbine_id else None,
         )
         one_min_agg = build_scada_1min_aggregates(
             scada_1min,
@@ -264,6 +271,7 @@ def main() -> None:
         "turbine_order": turbine_order,
         "include_tower": bool(args.include_tower),
         "include_1min": bool(args.include_1min),
+        "turbine_id": args.turbine_id,
         "output_dir": str(output_dir),
     }
     (output_dir / "summary.json").write_text(

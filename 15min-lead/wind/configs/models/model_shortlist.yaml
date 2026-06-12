@@ -32,9 +32,29 @@ deep_models:
       - geographic_distance_graph
       - train_correlation_graph
       - learned_adaptive_graph
+  - name: agcrn
+    priority: highest
+    notes: "Adaptive graph recurrent baseline with learned node embeddings"
+    preferred_store: hub_ws_only
+  - name: mtgnn
+    priority: high
+    notes: "Learned sparse directed graph with dilated temporal convolutions"
+    preferred_store: hub_ws_only
+  - name: moderntcn_joint
+    priority: high
+    notes: "Non-graph strong temporal baseline on joint hub-height wind-speed series"
+    preferred_store: hub_ws_only
   - name: transformer_ablation
     priority: medium
     notes: "WindFormer-style or PatchTST-style comparison after graph model is stable"
+
+single_turbine_controls:
+  - name: gru_single_turbine
+    priority: high
+    notes: "Pure time-series control on one selected turbine"
+  - name: tcn_single_turbine
+    priority: high
+    notes: "Pure time-series control on one selected turbine"
 
 training:
   loss_candidates: [huber, mse]
@@ -42,4 +62,3 @@ training:
   learning_rate: 0.001
   early_stopping_patience: 10
   local_debug_epochs: 50
-

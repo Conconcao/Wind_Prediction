@@ -61,3 +61,44 @@ def test_package_remote_run_collects_expected_summary_files(tmp_path: Path) -> N
     assert loaded_manifest["log_stem"] == "xinyang_gwnet_full"
     assert any(item.endswith("gwnet_baseline.pt") for item in loaded_manifest["excluded_large_files"])
     assert manifest["output_dir"] == str(run_dir)
+
+
+def test_package_remote_run_can_skip_store_summary_for_dense_runs(tmp_path: Path) -> None:
+    train_dir = tmp_path / "artifacts" / "server_runs" / "gru_single_run"
+    log_dir = tmp_path / "logs"
+    output_root = tmp_path / "results" / "remote_runs"
+    train_dir.mkdir(parents=True)
+    log_dir.mkdir(parents=True)
+
+    for file_name in (
+        "metrics.json",
+        "metrics.csv",
+        "training_history.csv",
+        "val_per_turbine.csv",
+        "test_per_turbine.csv",
+        "summary.json",
+    ):
+        (train_dir / file_name).write_text(f"content for {file_name}\n", encoding="utf-8")
+
+    (log_dir / "6001.xinyang_gru_single.out").write_text("ok\n", encoding="utf-8")
+    (log_dir / "6001.xinyang_gru_single.err").write_text("", encoding="utf-8")
+
+    manifest = package_remote_run(
+        RemoteRunPackageSpec(
+            run_name="xinyang_gru_single_6001",
+            job_id="6001",
+            train_dir=train_dir,
+            store_dir=None,
+            log_dir=log_dir,
+            output_root=output_root,
+            log_stem="xinyang_gru_single",
+            include_store_summary=False,
+        )
+    )
+
+    run_dir = output_root / "xinyang_gru_single_6001"
+    assert (run_dir / "metrics.json").exists()
+    assert not (run_dir / "store_summary.json").exists()
+    loaded_manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert loaded_manifest["store_summary"] is None
+    assert manifest["store_dir"] is None

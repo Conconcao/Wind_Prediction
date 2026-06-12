@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import torch
 
+from xinyang_wind15.agcrn import AGCRNSeq2One
 from xinyang_wind15.graph import build_graph_wavenet_supports
 from xinyang_wind15.gru import MultiTurbineGRU
+from xinyang_wind15.modern_tcn import ModernTCNForecaster
 from xinyang_wind15.gwnet import GraphWaveNetLite
+from xinyang_wind15.mtgnn import MTGNNLite
 from xinyang_wind15.tcn import MultiTurbineTCN
 
 
@@ -52,5 +55,54 @@ def test_graph_wavenet_lite_forward_shape() -> None:
         layers=2,
     )
     x = torch.randn(8, 32, 4, 6)
+    y = model(x)
+    assert tuple(y.shape) == (8, 4)
+
+
+def test_agcrn_forward_shape() -> None:
+    model = AGCRNSeq2One(
+        num_nodes=4,
+        input_dim=2,
+        hidden_dim=16,
+        embed_dim=8,
+        cheb_k=3,
+        num_layers=2,
+    )
+    x = torch.randn(8, 32, 4, 2)
+    y = model(x)
+    assert tuple(y.shape) == (8, 4)
+
+
+def test_mtgnn_lite_forward_shape() -> None:
+    model = MTGNNLite(
+        num_nodes=4,
+        in_dim=2,
+        seq_length=32,
+        gcn_depth=2,
+        subgraph_size=4,
+        node_dim=8,
+        conv_channels=16,
+        residual_channels=16,
+        skip_channels=32,
+        end_channels=64,
+        layers=2,
+    )
+    x = torch.randn(8, 32, 4, 2)
+    y = model(x)
+    assert tuple(y.shape) == (8, 4)
+
+
+def test_modern_tcn_forward_shape() -> None:
+    model = ModernTCNForecaster(
+        n_vars=4,
+        seq_len=32,
+        hidden_dim=16,
+        num_blocks=2,
+        patch_size=4,
+        patch_stride=2,
+        large_kernel=9,
+        small_kernel=3,
+    )
+    x = torch.randn(8, 32, 4)
     y = model(x)
     assert tuple(y.shape) == (8, 4)

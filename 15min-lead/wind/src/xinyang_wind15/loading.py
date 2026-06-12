@@ -75,16 +75,29 @@ def _filter_turbines(
     return df.loc[df[turbine_col].isin(keep_turbines)].copy()
 
 
+def _filter_specific_turbines(
+    df: pd.DataFrame,
+    turbine_col: str,
+    turbine_ids: Sequence[str] | None,
+) -> pd.DataFrame:
+    if not turbine_ids:
+        return df
+    keep_turbines = [str(turbine_id) for turbine_id in turbine_ids]
+    return df.loc[df[turbine_col].isin(keep_turbines)].copy()
+
+
 def load_scada_15min(
     path: str | Path,
     *,
     max_turbines: int | None = None,
+    turbine_ids: Sequence[str] | None = None,
     tail_timestamps: int | None = None,
 ) -> pd.DataFrame:
     resolved_path = _resolve_input_path(path, kind="scada_15min")
     df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_15MIN_TO_CANONICAL)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = _filter_specific_turbines(df, "turbine_id", turbine_ids)
     df = _filter_turbines(df, "turbine_id", max_turbines)
     df = _filter_time_tail(df, "timestamp", tail_timestamps)
     df = df.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)
@@ -95,12 +108,14 @@ def load_scada_1min(
     path: str | Path,
     *,
     max_turbines: int | None = None,
+    turbine_ids: Sequence[str] | None = None,
     tail_timestamps: int | None = None,
 ) -> pd.DataFrame:
     resolved_path = _resolve_input_path(path, kind="scada_1min")
     df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_1MIN_TO_CANONICAL)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = _filter_specific_turbines(df, "turbine_id", turbine_ids)
     df = _filter_turbines(df, "turbine_id", max_turbines)
     df = _filter_time_tail(df, "timestamp", tail_timestamps)
     df = df.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)

@@ -17,18 +17,29 @@ DEFAULT_TRAIN_FILES: tuple[str, ...] = (
     "summary.json",
 )
 
+DEFAULT_MODEL_ARTIFACTS: tuple[str, ...] = (
+    "gwnet_baseline.pt",
+    "agcrn_baseline.pt",
+    "mtgnn_baseline.pt",
+    "moderntcn_baseline.pt",
+    "gru_baseline.pt",
+    "tcn_baseline.pt",
+)
+
 
 @dataclass(frozen=True)
 class RemoteRunPackageSpec:
     run_name: str
     job_id: str
     train_dir: Path
-    store_dir: Path
+    store_dir: Path | None
     log_dir: Path
     output_root: Path
     max_log_lines: int = 200
     train_files: tuple[str, ...] = DEFAULT_TRAIN_FILES
     log_stem: str = "xinyang_gwnet_full"
+    include_store_summary: bool = True
+    model_artifacts: tuple[str, ...] = DEFAULT_MODEL_ARTIFACTS
 
 
 def tail_lines(path: str | Path, max_lines: int) -> str:
@@ -61,18 +72,26 @@ def _copy_required_files(
 
 def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
     train_dir = Path(spec.train_dir)
-    store_dir = Path(spec.store_dir)
+    store_dir = None if spec.store_dir is None else Path(spec.store_dir)
     log_dir = Path(spec.log_dir)
     output_dir = Path(spec.output_root) / spec.run_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     copied_train = _copy_required_files(train_dir, output_dir, spec.train_files)
 
-    store_summary_src = store_dir / "summary.json"
-    if not store_summary_src.exists():
-        raise FileNotFoundError(f"Missing required store summary: {store_summary_src}")
-    store_summary_dest = output_dir / "store_summary.json"
-    store_summary_dest.write_bytes(store_summary_src.read_bytes())
+    store_summary_manifest = None
+    if spec.include_store_summary:
+        if store_dir is None:
+            raise ValueError("include_store_summary=True requires store_dir to be provided.")
+        store_summary_src = store_dir / "summary.json"
+        if not store_summary_src.exists():
+            raise FileNotFoundError(f"Missing required store summary: {store_summary_src}")
+        store_summary_dest = output_dir / "store_summary.json"
+        store_summary_dest.write_bytes(store_summary_src.read_bytes())
+        store_summary_manifest = {
+            "source": str(store_summary_src),
+            "target": str(store_summary_dest),
+        }
 
     out_log_src = log_dir / f"{spec.job_id}.{spec.log_stem}.out"
     err_log_src = log_dir / f"{spec.job_id}.{spec.log_stem}.err"
@@ -96,28 +115,33 @@ def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
         "run_name": spec.run_name,
         "job_id": spec.job_id,
         "train_dir": str(train_dir),
-        "store_dir": str(store_dir),
+        "store_dir": None if store_dir is None else str(store_dir),
         "log_dir": str(log_dir),
         "output_dir": str(output_dir),
         "max_log_lines": int(spec.max_log_lines),
         "log_stem": spec.log_stem,
         "copied_train_files": copied_train,
-        "store_summary": {
-            "source": str(store_summary_src),
-            "target": str(store_summary_dest),
-        },
+        "store_summary": store_summary_manifest,
         "tailed_logs": [
             {"source": str(out_log_src), "target": str(out_log_dest)},
             {"source": str(err_log_src), "target": str(err_log_dest)},
         ],
         "excluded_large_files": [
-            str(train_dir / "gwnet_baseline.pt"),
-            str(store_dir / "feature_tensor.npy"),
-            str(store_dir / "target_matrix.npy"),
-            str(store_dir / "origin_indices.npy"),
-            str(store_dir / "split_labels.npy"),
-            str(store_dir / "distance_adjacency.npy"),
-            str(store_dir / "correlation_adjacency.npy"),
+            *[str(train_dir / file_name) for file_name in spec.model_artifacts],
+            *(
+                []
+                if store_dir is None
+                else [
+                    str(store_dir / "feature_tensor.npy"),
+                    str(store_dir / "target_matrix.npy"),
+                    str(store_dir / "origin_indices.npy"),
+                    str(store_dir / "target_indices.npy"),
+                    str(store_dir / "target_mask.npy"),
+                    str(store_dir / "split_labels.npy"),
+                    str(store_dir / "distance_adjacency.npy"),
+                    str(store_dir / "correlation_adjacency.npy"),
+                ]
+            ),
         ],
     }
     manifest_path = output_dir / "manifest.json"

@@ -1,0 +1,66 @@
+{
+  "run_name": "xinyang_gwnet_full_validfix_6058",
+  "job_id": "6058",
+  "train_dir": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run",
+  "store_dir": "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix",
+  "log_dir": "logs",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058",
+  "max_log_lines": 200,
+  "log_stem": "xinyang_gwnet_full_validfix",
+  "copied_train_files": [
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/metrics.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/metrics.json"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/metrics.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/metrics.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/training_history.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/training_history.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/val_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/val_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/test_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/test_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/summary.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/summary.json"
+    }
+  ],
+  "store_summary": {
+    "source": "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/summary.json",
+    "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/store_summary.json"
+  },
+  "tailed_logs": [
+    {
+      "source": "logs/6058.xinyang_gwnet_full_validfix.out",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/6058.xinyang_gwnet_full_validfix.out"
+    },
+    {
+      "source": "logs/6058.xinyang_gwnet_full_validfix.err",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_validfix_6058/6058.xinyang_gwnet_full_validfix.err"
+    }
+  ],
+  "excluded_large_files": [
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/gwnet_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/agcrn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/mtgnn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/moderntcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/gru_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_validfix_run/tcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/feature_tensor.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/target_matrix.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/origin_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/target_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/target_mask.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/split_labels.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/distance_adjacency.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix/correlation_adjacency.npy"
+  ]
+}

@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
+import torch
 
 from xinyang_wind15.features import build_supervised_frame, build_timestep_feature_frame
-from xinyang_wind15.graph import build_correlation_adjacency, build_graph_wavenet_supports
+from xinyang_wind15.graph import (
+    build_bearing_matrix,
+    build_correlation_adjacency,
+    build_directional_supports_torch,
+    build_graph_wavenet_supports,
+)
 from xinyang_wind15.loading import _resolve_input_path, build_scada_1min_aggregates
 from xinyang_wind15.settings import SplitBounds
 from xinyang_wind15.windows import build_spatiotemporal_windows, estimate_dense_window_bytes
@@ -125,6 +131,18 @@ def test_build_scada_1min_aggregates_and_merge() -> None:
     assert merged["m1_ws_15m_mean"].notna().all()
 
 
+def test_build_timestep_feature_frame_adds_direction_and_yaw_features() -> None:
+    scada = make_synthetic_scada()
+    frame = build_timestep_feature_frame(scada)
+    assert {"wd_sin", "wd_cos", "nacelle_sin", "nacelle_cos"}.issubset(frame.columns)
+    assert {"yaw_error_sin", "yaw_error_cos", "yaw_error_abs", "yaw_error_deg"}.issubset(
+        frame.columns
+    )
+    first_row = frame.iloc[0]
+    assert first_row["yaw_error_deg"] == pytest.approx(90.0)
+    assert first_row["yaw_error_abs"] == pytest.approx(90.0)
+
+
 def test_estimate_dense_window_bytes() -> None:
     estimated = estimate_dense_window_bytes(
         n_timestamps=12,
@@ -152,6 +170,29 @@ def test_correlation_adjacency_and_support_deduplication() -> None:
 
     supports = build_graph_wavenet_supports(adjacency)
     assert len(supports) == 1
+
+
+def test_bearing_matrix_and_directional_supports() -> None:
+    turbine_meta = pd.DataFrame(
+        [
+            {"turbine_id": "T01", "longitude_deg": 120.0, "latitude_deg": 33.0},
+            {"turbine_id": "T02", "longitude_deg": 120.01, "latitude_deg": 33.0},
+        ]
+    )
+    bearing_matrix = build_bearing_matrix(turbine_meta, ["T01", "T02"])
+    assert bearing_matrix.shape == (2, 2)
+    assert float(bearing_matrix[0, 1]) == pytest.approx(90.0, abs=5.0)
+
+    supports = build_directional_supports_torch(
+        torch.tensor([[270.0, 270.0]], dtype=torch.float32),
+        bearing_matrix_deg=torch.tensor(bearing_matrix, dtype=torch.float32),
+        base_adjacency=torch.ones((2, 2), dtype=torch.float32),
+        sigma_deg=20.0,
+        include_transpose=True,
+    )
+    assert len(supports) == 2
+    assert tuple(supports[0].shape) == (1, 2, 2)
+    assert float(supports[0][0, 0, 1]) > float(supports[0][0, 1, 0])
 
 
 def test_resolve_input_path_recovers_from_mojibake_like_names(tmp_path) -> None:

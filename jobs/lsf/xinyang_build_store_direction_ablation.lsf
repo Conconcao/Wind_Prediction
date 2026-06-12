@@ -1,0 +1,42 @@
+#!/bin/bash
+#BSUB -J xinyang_store_dirablation
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 06:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_dirablation.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_dirablation.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+FEATURE_PRESET="${FEATURE_PRESET:-direction_wd_only}"
+STORE_TAG="${STORE_TAG:-xinyang_store_direction_wd}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$STORE_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/build_window_store.py \
+  --split-config "$CONFIG_PATH" \
+  --lookback-steps 32 \
+  --feature-preset "$FEATURE_PRESET" \
+  --output-dir "$STORE_DIR"

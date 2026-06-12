@@ -46,7 +46,7 @@ experiments on the `xinyang` wind farm.
 - `scripts/build_window_store.py`
   - writes a time-major disk-backed feature store plus valid window indices
   - intended for larger deep-learning runs where dense window materialization is too expensive
-  - supports feature presets such as `default_multivariate`, `hub_ws_only`, and `scada_core`
+  - supports feature presets such as `default_multivariate`, `hub_ws_only`, `direction_wd_only`, `direction_wd_yaw`, `direction_wd_yaw_error`, and `scada_core`
   - now supports `--min-target-coverage` to avoid discarding windows when only a subset of turbine targets is missing
 - `scripts/train_gru_baseline.py`
   - trains a local multi-turbine GRU baseline on windowed data
@@ -59,6 +59,7 @@ experiments on the `xinyang` wind farm.
 - `scripts/train_gwnet_from_store.py`
   - trains a Graph WaveNet style model from the disk-backed store and saved adjacency
   - supports `distance` or `distance + correlation` fixed graph supports
+  - can also append a wind-direction-driven dynamic support from the latest lookback step
 - `scripts/train_agcrn_from_store.py`
   - trains an AGCRN-style adaptive graph recurrent model from the disk-backed store
 - `scripts/train_mtgnn_from_store.py`
@@ -166,6 +167,8 @@ Supporting server-side files:
 - `jobs/lsf/xinyang_train_gwnet_full.lsf`
 - `jobs/lsf/xinyang_build_store_full_validfix.lsf`
 - `jobs/lsf/xinyang_train_gwnet_full_validfix.lsf`
+- `jobs/lsf/xinyang_build_store_direction_ablation.lsf`
+- `jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf`
 - `jobs/slurm/xinyang_build_store_full.slurm`
 - `jobs/slurm/xinyang_train_gwnet_full.slurm`
 
@@ -208,6 +211,40 @@ Server-side `LSF` entry points for this setup:
 - `jobs/lsf/xinyang_train_moderntcn_hubws_joint.lsf`
 - `jobs/lsf/xinyang_train_gru_single_turbine.lsf`
 - `jobs/lsf/xinyang_train_tcn_single_turbine.lsf`
+
+## Direction and yaw ablations
+
+The shortest targeted follow-up after the current `hub_ws_only` and full
+multivariate runs is a compact direction/yaw ladder on the same joint
+`GWNet` path:
+
+- `D0`: `hub_ws_only`
+- `D1`: `direction_wd_only`
+- `D2`: `direction_wd_yaw`
+- `D3`: `direction_wd_yaw_error`
+- `D4`: `direction_wd_yaw_error` plus dynamic directional support
+
+Preset contents:
+
+- `direction_wd_only`: `ws_mean + wd_sin + wd_cos`
+- `direction_wd_yaw`: `D1 + nacelle_sin + nacelle_cos`
+- `direction_wd_yaw_error`: `D2 + yaw_error_sin + yaw_error_cos + yaw_error_abs`
+
+The new `LSF` scripts are parameterized so you can switch among these
+ablations without editing files. Example submissions:
+
+```bash
+FEATURE_PRESET=direction_wd_only STORE_TAG=xinyang_store_direction_wd bsub < jobs/lsf/xinyang_build_store_direction_ablation.lsf
+STORE_TAG=xinyang_store_direction_wd RUN_TAG=gwnet_direction_wd_run bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
+
+FEATURE_PRESET=direction_wd_yaw STORE_TAG=xinyang_store_direction_wd_yaw bsub < jobs/lsf/xinyang_build_store_direction_ablation.lsf
+STORE_TAG=xinyang_store_direction_wd_yaw RUN_TAG=gwnet_direction_wd_yaw_run bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
+
+FEATURE_PRESET=direction_wd_yaw_error STORE_TAG=xinyang_store_direction_wd_yaw_error bsub < jobs/lsf/xinyang_build_store_direction_ablation.lsf
+STORE_TAG=xinyang_store_direction_wd_yaw_error RUN_TAG=gwnet_direction_wd_yaw_error_run bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
+
+STORE_TAG=xinyang_store_direction_wd_yaw_error RUN_TAG=gwnet_direction_wd_yaw_error_dyn_run DYNAMIC_DIRECTIONAL_SUPPORT=1 DIRECTION_SUPPORT_SOURCE=wd_sincos bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
+```
 
 ## Single-turbine pure time-series controls
 

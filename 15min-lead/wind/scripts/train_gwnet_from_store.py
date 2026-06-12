@@ -19,7 +19,11 @@ SRC_DIR = PROJECT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from xinyang_wind15.graph import build_graph_wavenet_supports, supports_to_torch  # noqa: E402
+from xinyang_wind15.graph import (  # noqa: E402
+    build_directional_supports_torch,
+    build_graph_wavenet_supports,
+    supports_to_torch,
+)
 from xinyang_wind15.gwnet import GraphWaveNetLite  # noqa: E402
 from xinyang_wind15.sequence import (  # noqa: E402
     WindowStoreDataset,
@@ -74,6 +78,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Use only the fixed supports saved with the store.",
     )
+    parser.add_argument(
+        "--dynamic-directional-support",
+        action="store_true",
+        help="Append a wind-direction-driven dynamic support built from the latest lookback step.",
+    )
+    parser.add_argument(
+        "--direction-support-source",
+        choices=["auto", "wd_mean", "wd_sincos"],
+        default="auto",
+        help="Which feature columns should be used to reconstruct the per-turbine wind direction.",
+    )
+    parser.add_argument(
+        "--direction-support-sigma-deg",
+        type=float,
+        default=35.0,
+        help="Angular bandwidth in degrees for the dynamic directional support.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()
 
@@ -84,6 +105,86 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def _resolve_direction_feature_spec(
+    feature_columns: list[str],
+    *,
+    direction_support_source: str,
+) -> dict[str, int | str]:
+    if direction_support_source in {"auto", "wd_sincos"}:
+        if "wd_sin" in feature_columns and "wd_cos" in feature_columns:
+            return {
+                "source": "wd_sincos",
+                "sin_idx": int(feature_columns.index("wd_sin")),
+                "cos_idx": int(feature_columns.index("wd_cos")),
+            }
+        if direction_support_source == "wd_sincos":
+            raise ValueError(
+                "Requested wd_sincos dynamic direction support, but wd_sin/wd_cos "
+                f"are not present in the store features: {feature_columns}"
+            )
+    if "wd_mean" in feature_columns:
+        return {
+            "source": "wd_mean",
+            "wd_idx": int(feature_columns.index("wd_mean")),
+        }
+    raise ValueError(
+        "Dynamic directional support requires wd_sin/wd_cos or wd_mean in the store features. "
+        f"Current features: {feature_columns}"
+    )
+
+
+def _make_directional_support_builder(
+    *,
+    feature_columns: list[str],
+    stats,
+    store_dir: Path,
+    distance_adjacency: np.ndarray,
+    device: torch.device,
+    direction_support_source: str,
+    sigma_deg: float,
+):
+    spec = _resolve_direction_feature_spec(
+        feature_columns,
+        direction_support_source=direction_support_source,
+    )
+    bearing_matrix_path = store_dir / "bearing_matrix.npy"
+    if not bearing_matrix_path.exists():
+        raise FileNotFoundError(
+            f"Expected bearing matrix at {bearing_matrix_path}. Rebuild the store with current code."
+        )
+    bearing_matrix = torch.tensor(
+        np.load(bearing_matrix_path),
+        dtype=torch.float32,
+        device=device,
+    )
+    base_distance = torch.tensor(distance_adjacency, dtype=torch.float32, device=device)
+    x_mean = torch.tensor(stats.x_mean[0, 0, 0], dtype=torch.float32, device=device)
+    x_std = torch.tensor(stats.x_std[0, 0, 0], dtype=torch.float32, device=device)
+
+    def build_extra_supports(x_batch: torch.Tensor) -> list[torch.Tensor]:
+        if spec["source"] == "wd_sincos":
+            sin_idx = int(spec["sin_idx"])
+            cos_idx = int(spec["cos_idx"])
+            wd_sin = x_batch[:, -1, :, sin_idx] * x_std[sin_idx] + x_mean[sin_idx]
+            wd_cos = x_batch[:, -1, :, cos_idx] * x_std[cos_idx] + x_mean[cos_idx]
+            wd_deg = torch.remainder(torch.rad2deg(torch.atan2(wd_sin, wd_cos)), 360.0)
+        else:
+            wd_idx = int(spec["wd_idx"])
+            wd_deg = torch.remainder(
+                x_batch[:, -1, :, wd_idx] * x_std[wd_idx] + x_mean[wd_idx],
+                360.0,
+            )
+        return build_directional_supports_torch(
+            wd_deg,
+            bearing_matrix_deg=bearing_matrix,
+            base_adjacency=base_distance,
+            sigma_deg=sigma_deg,
+            include_transpose=True,
+        )
+
+    return build_extra_supports
 
 
 def main() -> None:
@@ -110,7 +211,8 @@ def main() -> None:
             f"Expected adjacency file at {distance_adjacency_path}. Build the store first."
         )
     correlation_adjacency_path = store_dir / "correlation_adjacency.npy"
-    adjacency_list = [np.load(distance_adjacency_path)]
+    distance_adjacency = np.load(distance_adjacency_path)
+    adjacency_list = [distance_adjacency]
     if args.support_mode == "distance_correlation":
         if not correlation_adjacency_path.exists():
             raise FileNotFoundError(
@@ -202,9 +304,21 @@ def main() -> None:
         blocks=args.blocks,
         layers=args.layers,
         graph_order=args.graph_order,
+        extra_support_len=2 if args.dynamic_directional_support else 0,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     loss_fn = nn.HuberLoss(reduction="none")
+    support_builder = None
+    if args.dynamic_directional_support:
+        support_builder = _make_directional_support_builder(
+            feature_columns=feature_columns,
+            stats=stats,
+            store_dir=store_dir,
+            distance_adjacency=distance_adjacency,
+            device=device,
+            direction_support_source=args.direction_support_source,
+            sigma_deg=args.direction_support_sigma_deg,
+        )
 
     best_val_rmse = float("inf")
     best_state = None
@@ -217,7 +331,8 @@ def main() -> None:
             y_batch = y_batch.to(device)
             y_mask_batch = y_mask_batch.to(device)
             optimizer.zero_grad()
-            pred = model(x_batch)
+            extra_supports = support_builder(x_batch) if support_builder is not None else None
+            pred = model(x_batch, extra_supports=extra_supports)
             loss = masked_mean_loss(loss_fn(pred, y_batch), y_mask_batch)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
@@ -231,6 +346,7 @@ def main() -> None:
             stats=stats,
             turbine_order=turbine_order,
             split_name="val",
+            supports_builder=support_builder,
         )
         history.append(
             {
@@ -254,6 +370,7 @@ def main() -> None:
         stats=stats,
         turbine_order=turbine_order,
         split_name="val",
+        supports_builder=support_builder,
     )
     test_metrics, test_per_turbine = evaluate_window_model(
         model,
@@ -262,6 +379,7 @@ def main() -> None:
         stats=stats,
         turbine_order=turbine_order,
         split_name="test",
+        supports_builder=support_builder,
     )
 
     output_dir = Path(args.output_dir)
@@ -289,9 +407,12 @@ def main() -> None:
         "turbine_order": turbine_order,
         "min_target_coverage": float(metadata.get("min_target_coverage", 1.0)),
         "min_target_count": int(metadata.get("min_target_count", len(turbine_order))),
-        "supports": len(supports),
+        "supports": len(supports) + (2 if args.dynamic_directional_support else 0),
         "support_mode": args.support_mode,
         "adaptive_adj": not args.disable_adaptive_adj,
+        "dynamic_directional_support": bool(args.dynamic_directional_support),
+        "direction_support_source": args.direction_support_source,
+        "direction_support_sigma_deg": float(args.direction_support_sigma_deg),
         "residual_channels": int(args.residual_channels),
         "dilation_channels": int(args.dilation_channels),
         "skip_channels": int(args.skip_channels),

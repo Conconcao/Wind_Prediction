@@ -1,0 +1,69 @@
+#!/bin/bash
+#BSUB -J xinyang_gwnet_dirablation
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gwnet_dirablation.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gwnet_dirablation.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_TAG="${STORE_TAG:-xinyang_store_direction_wd}"
+RUN_TAG="${RUN_TAG:-gwnet_direction_wd_run}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$RUN_TAG"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+SUPPORT_MODE="${SUPPORT_MODE:-distance_correlation}"
+EPOCHS="${EPOCHS:-30}"
+BATCH_SIZE="${BATCH_SIZE:-64}"
+DYNAMIC_DIRECTIONAL_SUPPORT="${DYNAMIC_DIRECTIONAL_SUPPORT:-0}"
+DIRECTION_SUPPORT_SOURCE="${DIRECTION_SUPPORT_SOURCE:-auto}"
+DIRECTION_SUPPORT_SIGMA_DEG="${DIRECTION_SUPPORT_SIGMA_DEG:-35}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+CMD=(
+  python 15min-lead/wind/scripts/train_gwnet_from_store.py
+  --store-dir "$STORE_DIR"
+  --support-mode "$SUPPORT_MODE"
+  --epochs "$EPOCHS"
+  --batch-size "$BATCH_SIZE"
+  --residual-channels 32
+  --dilation-channels 32
+  --skip-channels 128
+  --end-channels 256
+  --kernel-size 2
+  --blocks 2
+  --layers 2
+  --graph-order 2
+  --output-dir "$RUN_DIR"
+)
+
+if [ "$DYNAMIC_DIRECTIONAL_SUPPORT" = "1" ]; then
+  CMD+=(
+    --dynamic-directional-support
+    --direction-support-source "$DIRECTION_SUPPORT_SOURCE"
+    --direction-support-sigma-deg "$DIRECTION_SUPPORT_SIGMA_DEG"
+  )
+fi
+
+"${CMD[@]}"

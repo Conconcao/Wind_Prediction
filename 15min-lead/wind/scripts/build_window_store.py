@@ -16,6 +16,7 @@ if str(SRC_DIR) not in sys.path:
 from xinyang_wind15.features import build_timestep_feature_frame  # noqa: E402
 from xinyang_wind15.feature_presets import resolve_feature_columns  # noqa: E402
 from xinyang_wind15.graph import (  # noqa: E402
+    build_bearing_matrix,
     build_correlation_adjacency,
     build_distance_adjacency,
 )
@@ -52,7 +53,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--feature-preset",
         default="default_multivariate",
-        choices=["default_multivariate", "hub_ws_only", "scada_core"],
+        choices=[
+            "default_multivariate",
+            "hub_ws_only",
+            "direction_wd_only",
+            "direction_wd_yaw",
+            "direction_wd_yaw_error",
+            "scada_core",
+        ],
     )
     parser.add_argument("--include-tower", action="store_true")
     parser.add_argument("--include-1min", action="store_true")
@@ -121,6 +129,7 @@ def main() -> None:
 
     turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
     adjacency = build_distance_adjacency(turbine_meta, metadata["turbine_order"])
+    bearing_matrix = build_bearing_matrix(turbine_meta, metadata["turbine_order"])
     train_scada = scada.loc[
         (scada["timestamp"] >= settings.split_bounds.train_start)
         & (scada["timestamp"] <= settings.split_bounds.train_end)
@@ -134,6 +143,7 @@ def main() -> None:
 
     np.save(out_dir / "distance_adjacency.npy", adjacency)
     np.save(out_dir / "correlation_adjacency.npy", correlation_adjacency)
+    np.save(out_dir / "bearing_matrix.npy", bearing_matrix)
     store_bytes = estimate_window_store_bytes(
         n_timestamps=int(metadata["feature_tensor_shape"][0]),
         n_turbines=int(metadata["feature_tensor_shape"][1]),
@@ -144,6 +154,7 @@ def main() -> None:
         "estimated_store_gib": store_bytes / (1024**3),
         "distance_adjacency_path": str(out_dir / "distance_adjacency.npy"),
         "correlation_adjacency_path": str(out_dir / "correlation_adjacency.npy"),
+        "bearing_matrix_path": str(out_dir / "bearing_matrix.npy"),
         "include_tower": bool(args.include_tower),
         "include_1min": bool(args.include_1min),
         "feature_preset": str(args.feature_preset),

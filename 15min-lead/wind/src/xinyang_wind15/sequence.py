@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 from typing import Any
 
 import numpy as np
@@ -245,6 +246,7 @@ def evaluate_window_model(
     stats: StandardizationStats,
     turbine_order: list[str],
     split_name: str,
+    supports_builder: Callable[[torch.Tensor], list[torch.Tensor] | None] | None = None,
 ) -> tuple[dict[str, Any], pd.DataFrame]:
     model.eval()
     all_preds = []
@@ -258,7 +260,11 @@ def evaluate_window_model(
                 x_batch, y_batch = batch
                 y_mask_batch = torch.ones_like(y_batch, dtype=torch.bool)
             x_batch = x_batch.to(device)
-            pred = model(x_batch).cpu().numpy()
+            if supports_builder is None:
+                pred = model(x_batch).cpu().numpy()
+            else:
+                extra_supports = supports_builder(x_batch)
+                pred = model(x_batch, extra_supports=extra_supports).cpu().numpy()
             all_preds.append(pred)
             all_truth.append(y_batch.numpy())
             all_masks.append(y_mask_batch.numpy().astype(bool, copy=False))

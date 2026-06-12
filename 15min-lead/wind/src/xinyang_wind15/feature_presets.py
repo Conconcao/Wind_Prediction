@@ -14,6 +14,28 @@ FEATURE_PRESETS: dict[str, list[str]] = {
     "hub_ws_only": [
         "ws_mean",
     ],
+    "direction_wd_only": [
+        "ws_mean",
+        "wd_sin",
+        "wd_cos",
+    ],
+    "direction_wd_yaw": [
+        "ws_mean",
+        "wd_sin",
+        "wd_cos",
+        "nacelle_sin",
+        "nacelle_cos",
+    ],
+    "direction_wd_yaw_error": [
+        "ws_mean",
+        "wd_sin",
+        "wd_cos",
+        "nacelle_sin",
+        "nacelle_cos",
+        "yaw_error_sin",
+        "yaw_error_cos",
+        "yaw_error_abs",
+    ],
     "scada_core": [
         "ws_mean",
         "ws_std",

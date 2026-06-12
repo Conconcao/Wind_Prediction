@@ -14,7 +14,14 @@ class NeighborhoodConv(nn.Module):
         # Graph WaveNet uses einsum over [batch, channels, nodes, steps].
         # Reference repo: https://github.com/nnzhan/Graph-WaveNet/blob/master/model.py
         # torch.einsum docs: https://docs.pytorch.org/docs/stable/generated/torch.einsum.html
-        return torch.einsum("bcnt,nm->bcmt", x, adjacency).contiguous()
+        if adjacency.dim() == 2:
+            return torch.einsum("bcnt,nm->bcmt", x, adjacency).contiguous()
+        if adjacency.dim() == 3:
+            return torch.einsum("bcnt,bnm->bcmt", x, adjacency).contiguous()
+        raise ValueError(
+            "NeighborhoodConv expects adjacency with 2 or 3 dimensions. "
+            f"Got shape {tuple(adjacency.shape)}."
+        )
 
 
 class Linear1x1(nn.Module):
@@ -92,6 +99,7 @@ class GraphWaveNetLite(nn.Module):
         layers: int = 2,
         graph_order: int = 2,
         adaptive_embedding_dim: int = 10,
+        extra_support_len: int = 0,
     ) -> None:
         super().__init__()
         self.dropout = float(dropout)
@@ -100,6 +108,7 @@ class GraphWaveNetLite(nn.Module):
         self.gcn_bool = bool(gcn_bool)
         self.addaptadj = bool(addaptadj)
         self.kernel_size = int(kernel_size)
+        self.extra_support_len = int(extra_support_len)
 
         self.filter_convs = nn.ModuleList()
         self.gate_convs = nn.ModuleList()
@@ -115,7 +124,7 @@ class GraphWaveNetLite(nn.Module):
         )
 
         self.supports = supports if supports is not None else []
-        self.supports_len = len(self.supports)
+        self.supports_len = len(self.supports) + self.extra_support_len
         if self.gcn_bool and self.addaptadj:
             self.nodevec1 = nn.Parameter(
                 torch.randn(num_nodes, adaptive_embedding_dim),
@@ -194,14 +203,29 @@ class GraphWaveNetLite(nn.Module):
             bias=True,
         )
 
-    def _current_supports(self) -> list[torch.Tensor]:
+    def _current_supports(
+        self,
+        extra_supports: list[torch.Tensor] | None = None,
+    ) -> list[torch.Tensor]:
         supports = list(self.supports)
+        current_extra_supports = [] if extra_supports is None else list(extra_supports)
+        if len(current_extra_supports) != self.extra_support_len:
+            raise ValueError(
+                "GraphWaveNetLite received an unexpected number of extra supports. "
+                f"Expected {self.extra_support_len}, got {len(current_extra_supports)}."
+            )
+        supports.extend(current_extra_supports)
         if self.gcn_bool and self.addaptadj and self.nodevec1 is not None and self.nodevec2 is not None:
             adaptive = F.softmax(F.relu(self.nodevec1 @ self.nodevec2), dim=1)
             supports.append(adaptive)
         return supports
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        extra_supports: list[torch.Tensor] | None = None,
+    ) -> torch.Tensor:
         # Input comes from the store dataset as [batch, steps, nodes, features].
         x = x.permute(0, 3, 2, 1).contiguous()
         in_steps = x.size(3)
@@ -210,7 +234,7 @@ class GraphWaveNetLite(nn.Module):
 
         x = self.start_conv(x)
         skip = None
-        supports = self._current_supports()
+        supports = self._current_supports(extra_supports=extra_supports)
 
         for layer_idx in range(self.blocks * self.layers):
             residual = x

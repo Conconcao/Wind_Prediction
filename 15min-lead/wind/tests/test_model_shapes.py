@@ -59,6 +59,33 @@ def test_graph_wavenet_lite_forward_shape() -> None:
     assert tuple(y.shape) == (8, 4)
 
 
+def test_graph_wavenet_lite_forward_shape_with_dynamic_supports() -> None:
+    adjacency = torch.eye(4, dtype=torch.float32).numpy()
+    supports = [
+        torch.tensor(support, dtype=torch.float32)
+        for support in build_graph_wavenet_supports(adjacency)
+    ]
+    model = GraphWaveNetLite(
+        num_nodes=4,
+        in_dim=6,
+        supports=supports,
+        residual_channels=16,
+        dilation_channels=16,
+        skip_channels=32,
+        end_channels=64,
+        blocks=2,
+        layers=2,
+        extra_support_len=2,
+    )
+    x = torch.randn(8, 32, 4, 6)
+    dynamic_supports = [
+        torch.eye(4, dtype=torch.float32).unsqueeze(0).repeat(8, 1, 1),
+        torch.eye(4, dtype=torch.float32).unsqueeze(0).repeat(8, 1, 1),
+    ]
+    y = model(x, extra_supports=dynamic_supports)
+    assert tuple(y.shape) == (8, 4)
+
+
 def test_agcrn_forward_shape() -> None:
     model = AGCRNSeq2One(
         num_nodes=4,

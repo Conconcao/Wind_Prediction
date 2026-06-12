@@ -46,6 +46,23 @@ def add_directional_features(
     return out
 
 
+def add_relative_direction_features(
+    df: pd.DataFrame,
+    *,
+    wind_direction_col: str,
+    yaw_direction_col: str,
+    prefix: str = "yaw_error",
+) -> pd.DataFrame:
+    out = df.copy()
+    yaw_error = ((out[wind_direction_col] - out[yaw_direction_col] + 180.0) % 360.0) - 180.0
+    out[f"{prefix}_deg"] = yaw_error
+    radians = np.deg2rad(yaw_error)
+    out[f"{prefix}_sin"] = np.sin(radians)
+    out[f"{prefix}_cos"] = np.cos(radians)
+    out[f"{prefix}_abs"] = np.abs(yaw_error)
+    return out
+
+
 def _add_missing_indicators(
     frame: pd.DataFrame,
     feature_cols: Sequence[str],
@@ -133,6 +150,11 @@ def build_timestep_feature_frame(
     out = add_calendar_features(out, "timestamp")
     out = add_directional_features(out, "wd_mean", "wd")
     out = add_directional_features(out, "nacelle_mean", "nacelle")
+    out = add_relative_direction_features(
+        out,
+        wind_direction_col="wd_mean",
+        yaw_direction_col="nacelle_mean",
+    )
     if tower_wide is not None:
         out = merge_tower_features(out, tower_wide, origin_timestamp_col="timestamp")
         out = _impute_prefixed_columns(out, prefix="tower_", group_col="turbine_id")
@@ -187,6 +209,11 @@ def build_supervised_frame(
     out = add_calendar_features(out, "target_timestamp")
     out = add_directional_features(out, "wd_mean", "cur_wd")
     out = add_directional_features(out, "nacelle_mean", "cur_nacelle")
+    out = add_relative_direction_features(
+        out,
+        wind_direction_col="wd_mean",
+        yaw_direction_col="nacelle_mean",
+    )
 
     if tower_wide is not None:
         out = merge_tower_features(

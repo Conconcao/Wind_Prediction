@@ -1,0 +1,42 @@
+#!/bin/bash
+#BSUB -J xinyang_store_full_validfix
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=64GB]"
+#BSUB -W 08:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full_validfix.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full_validfix.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_full_validfix"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$STORE_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/build_window_store.py \
+  --split-config "$CONFIG_PATH" \
+  --lookback-steps 32 \
+  --include-tower \
+  --include-1min \
+  --min-target-coverage 0.85 \
+  --output-dir "$STORE_DIR"

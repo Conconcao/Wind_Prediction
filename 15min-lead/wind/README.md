@@ -123,6 +123,19 @@ every forecast step. On the full-farm `hub_ws_only` setup, this raises
 the valid-window count from the earlier `406`-window bottleneck to
 `27899` windows when `--min-target-coverage 0.85` is used.
 
+The repaired validity logic also restores the wider multivariate store.
+Locally rebuilding the `include_tower + include_1min` full store with
+the current code yields:
+
+- `181` features
+- `27899` valid windows
+- `18926 / 6032 / 2941` train/val/test windows
+
+To avoid overwriting older pre-fix multivariate artifacts, use:
+
+- `jobs/lsf/xinyang_build_store_full_validfix.lsf`
+- `jobs/lsf/xinyang_train_gwnet_full_validfix.lsf`
+
 On the current enriched `4`-turbine debug subset, the deep-model ordering is:
 
 - `Graph WaveNet style + distance/correlation supports` test RMSE: about `0.7924`
@@ -151,6 +164,8 @@ Supporting server-side files:
 - `15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml`
 - `jobs/lsf/xinyang_build_store_full.lsf`
 - `jobs/lsf/xinyang_train_gwnet_full.lsf`
+- `jobs/lsf/xinyang_build_store_full_validfix.lsf`
+- `jobs/lsf/xinyang_train_gwnet_full_validfix.lsf`
 - `jobs/slurm/xinyang_build_store_full.slurm`
 - `jobs/slurm/xinyang_train_gwnet_full.slurm`
 

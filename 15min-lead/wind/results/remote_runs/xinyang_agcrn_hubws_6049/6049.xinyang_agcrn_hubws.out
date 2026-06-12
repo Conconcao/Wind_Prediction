@@ -1,0 +1,177 @@
+Sender: LSF System <lsfadmin@asc2-gn01>
+Subject: Job 6049: <xinyang_agcrn_hubws> in cluster <asc2> Done
+
+Job <xinyang_agcrn_hubws> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jun 12 16:07:35 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jun 12 16:07:35 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jun 12 16:07:35 2026
+Terminated at Fri Jun 12 16:32:02 2026
+Results reported at Fri Jun 12 16:32:02 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J xinyang_agcrn_hubws
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_agcrn_hubws.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_agcrn_hubws.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_agcrn_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --epochs 30 \
+  --batch-size 64 \
+  --hidden-dim 64 \
+  --embed-dim 10 \
+  --cheb-k 3 \
+  --num-layers 2 \
+  --output-dir "$RUN_DIR"
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   1277.84 sec.
+    Max Memory :                                 911 MB
+    Average Memory :                             848.93 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31857.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                150
+    Run time :                                   1467 sec.
+    Turnaround time :                            1467 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint",
+    "x_train_windows": 18926,
+    "x_val_windows": 6032,
+    "x_test_windows": 2941,
+    "lookback_steps": 32,
+    "horizon_steps": 1,
+    "feature_columns": [
+      "ws_mean"
+    ],
+    "turbine_order": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25",
+      "S26",
+      "S27",
+      "S28",
+      "S29",
+      "S30",
+      "S31",
+      "S32",
+      "S33",
+      "S34",
+      "S35",
+      "S36",
+      "S37",
+      "S38",
+      "S39",
+      "S40",
+      "S41",
+      "S42",
+      "S43",
+      "S44",
+      "S45",
+      "S46"
+    ],
+    "min_target_coverage": 0.85,
+    "min_target_count": 40,
+    "hidden_dim": 64,
+    "embed_dim": 10,
+    "cheb_k": 3,
+    "num_layers": 2,
+    "num_workers": 0,
+    "stats_chunk_size": 32,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run"
+  },
+  "val": {
+    "mae": 0.39444583654403687,
+    "rmse": 0.5334607574362922,
+    "r2": 0.9256555438041687,
+    "count": 269659,
+    "mae_macro": 0.3945671443058097,
+    "rmse_macro": 0.5332369001577717,
+    "r2_macro": 0.9247579807820527,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.4019230604171753,
+    "rmse": 0.546696633815293,
+    "r2": 0.9347206950187683,
+    "count": 131102,
+    "mae_macro": 0.40199653804302216,
+    "rmse_macro": 0.5460510733614821,
+    "r2_macro": 0.9340551936108134,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6049.xinyang_agcrn_hubws.err> for stderr output of this job.
+

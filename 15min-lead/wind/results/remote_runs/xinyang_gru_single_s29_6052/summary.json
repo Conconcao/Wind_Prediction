@@ -1,0 +1,32 @@
+{
+  "experiment_name": "xinyang_15min_wind_speed",
+  "x_train_shape": [
+    2324,
+    32,
+    1,
+    1
+  ],
+  "x_val_shape": [
+    6465,
+    32,
+    1,
+    1
+  ],
+  "x_test_shape": [
+    3179,
+    32,
+    1,
+    1
+  ],
+  "estimated_dense_window_gib": 0.0014712810516357422,
+  "feature_columns": [
+    "ws_mean"
+  ],
+  "turbine_order": [
+    "S29"
+  ],
+  "include_tower": false,
+  "include_1min": false,
+  "turbine_id": "S29",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/gru_single_S29"
+}

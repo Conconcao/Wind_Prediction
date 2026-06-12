@@ -1,0 +1,66 @@
+{
+  "run_name": "xinyang_agcrn_hubws_6049",
+  "job_id": "6049",
+  "train_dir": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run",
+  "store_dir": "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint",
+  "log_dir": "logs",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049",
+  "max_log_lines": 200,
+  "log_stem": "xinyang_agcrn_hubws",
+  "copied_train_files": [
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/metrics.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/metrics.json"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/metrics.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/metrics.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/training_history.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/training_history.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/val_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/val_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/test_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/test_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/summary.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/summary.json"
+    }
+  ],
+  "store_summary": {
+    "source": "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/summary.json",
+    "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/store_summary.json"
+  },
+  "tailed_logs": [
+    {
+      "source": "logs/6049.xinyang_agcrn_hubws.out",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/6049.xinyang_agcrn_hubws.out"
+    },
+    {
+      "source": "logs/6049.xinyang_agcrn_hubws.err",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_agcrn_hubws_6049/6049.xinyang_agcrn_hubws.err"
+    }
+  ],
+  "excluded_large_files": [
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/gwnet_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/agcrn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/mtgnn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/moderntcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/gru_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/agcrn_hubws_joint_run/tcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/feature_tensor.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/target_matrix.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/origin_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/target_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/target_mask.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/split_labels.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/distance_adjacency.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint/correlation_adjacency.npy"
+  ]
+}

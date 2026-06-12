@@ -1,0 +1,148 @@
+Sender: LSF System <lsfadmin@asc2-gn01>
+Subject: Job 6053: <xinyang_tcn_single> in cluster <asc2> Done
+
+Job <xinyang_tcn_single> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jun 12 16:08:08 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jun 12 16:08:35 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jun 12 16:08:35 2026
+Terminated at Fri Jun 12 16:10:55 2026
+Results reported at Fri Jun 12 16:10:55 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J xinyang_tcn_single
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=24GB]"
+#BSUB -W 08:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_tcn_single.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_tcn_single.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+RUN_ROOT="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs"
+TURBINE_ID="${TURBINE_ID:-S29}"
+RUN_DIR="$RUN_ROOT/tcn_single_${TURBINE_ID}"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_tcn_baseline.py \
+  --split-config "$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml" \
+  --turbine-id "$TURBINE_ID" \
+  --feature-columns ws_mean \
+  --max-turbines 1 \
+  --batch-size 128 \
+  --epochs 30 \
+  --channels 64 64 64 64 \
+  --output-dir "$RUN_DIR"
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   19.63 sec.
+    Max Memory :                                 1331 MB
+    Average Memory :                             385.43 MB
+    Total Requested Memory :                     24576.00 MB
+    Delta Memory :                               23245.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                346
+    Run time :                                   200 sec.
+    Turnaround time :                            167 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "experiment_name": "xinyang_15min_wind_speed",
+    "x_train_shape": [
+      2324,
+      32,
+      1,
+      1
+    ],
+    "x_val_shape": [
+      6465,
+      32,
+      1,
+      1
+    ],
+    "x_test_shape": [
+      3179,
+      32,
+      1,
+      1
+    ],
+    "estimated_dense_window_gib": 0.0014712810516357422,
+    "feature_columns": [
+      "ws_mean"
+    ],
+    "turbine_order": [
+      "S29"
+    ],
+    "channel_sizes": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "kernel_size": 3,
+    "include_tower": false,
+    "include_1min": false,
+    "turbine_id": "S29",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/tcn_single_S29"
+  },
+  "val": {
+    "mae": 0.39270836114883423,
+    "rmse": 0.5516826207061972,
+    "r2": 0.9172811508178711,
+    "count": 6465,
+    "mae_macro": 0.39270836114883423,
+    "rmse_macro": 0.5516826207061972,
+    "r2_macro": 0.9172811508178711,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.408847838640213,
+    "rmse": 0.5771742038816654,
+    "r2": 0.9258033037185669,
+    "count": 3179,
+    "mae_macro": 0.408847838640213,
+    "rmse_macro": 0.5771742038816654,
+    "r2_macro": 0.9258033037185669,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6053.xinyang_tcn_single.err> for stderr output of this job.
+

@@ -1,0 +1,55 @@
+{
+  "run_name": "xinyang_tcn_single_s29_6053",
+  "job_id": "6053",
+  "train_dir": "15min-lead/wind/artifacts/server_runs/tcn_single_S29",
+  "store_dir": null,
+  "log_dir": "logs",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053",
+  "max_log_lines": 200,
+  "log_stem": "xinyang_tcn_single",
+  "copied_train_files": [
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/metrics.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/metrics.json"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/metrics.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/metrics.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/training_history.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/training_history.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/val_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/val_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/test_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/test_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/tcn_single_S29/summary.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/summary.json"
+    }
+  ],
+  "store_summary": null,
+  "tailed_logs": [
+    {
+      "source": "logs/6053.xinyang_tcn_single.out",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/6053.xinyang_tcn_single.out"
+    },
+    {
+      "source": "logs/6053.xinyang_tcn_single.err",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_tcn_single_s29_6053/6053.xinyang_tcn_single.err"
+    }
+  ],
+  "excluded_large_files": [
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/gwnet_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/agcrn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/mtgnn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/moderntcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/gru_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/tcn_single_S29/tcn_baseline.pt"
+  ]
+}

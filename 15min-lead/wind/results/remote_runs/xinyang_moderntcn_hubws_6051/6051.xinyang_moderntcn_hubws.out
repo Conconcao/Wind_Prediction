@@ -1,0 +1,182 @@
+Sender: LSF System <lsfadmin@asc2-gn01>
+Subject: Job 6051: <xinyang_moderntcn_hubws> in cluster <asc2> Done
+
+Job <xinyang_moderntcn_hubws> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jun 12 16:07:51 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jun 12 16:07:53 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jun 12 16:07:53 2026
+Terminated at Fri Jun 12 16:12:40 2026
+Results reported at Fri Jun 12 16:12:40 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J xinyang_moderntcn_hubws
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_moderntcn_hubws.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_moderntcn_hubws.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/moderntcn_hubws_joint_run"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_moderntcn_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --epochs 30 \
+  --batch-size 64 \
+  --hidden-dim 32 \
+  --num-blocks 3 \
+  --patch-size 4 \
+  --patch-stride 2 \
+  --large-kernel 13 \
+  --small-kernel 5 \
+  --output-dir "$RUN_DIR"
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   128.00 sec.
+    Max Memory :                                 798 MB
+    Average Memory :                             560.00 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31970.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                150
+    Run time :                                   305 sec.
+    Turnaround time :                            289 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/xinyang_store_hubws_joint",
+    "x_train_windows": 18926,
+    "x_val_windows": 6032,
+    "x_test_windows": 2941,
+    "lookback_steps": 32,
+    "horizon_steps": 1,
+    "feature_columns": [
+      "ws_mean"
+    ],
+    "turbine_order": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25",
+      "S26",
+      "S27",
+      "S28",
+      "S29",
+      "S30",
+      "S31",
+      "S32",
+      "S33",
+      "S34",
+      "S35",
+      "S36",
+      "S37",
+      "S38",
+      "S39",
+      "S40",
+      "S41",
+      "S42",
+      "S43",
+      "S44",
+      "S45",
+      "S46"
+    ],
+    "min_target_coverage": 0.85,
+    "min_target_count": 40,
+    "hidden_dim": 32,
+    "ffn_ratio": 2,
+    "num_blocks": 3,
+    "patch_size": 4,
+    "patch_stride": 2,
+    "large_kernel": 13,
+    "small_kernel": 5,
+    "num_workers": 0,
+    "stats_chunk_size": 32,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/moderntcn_hubws_joint_run"
+  },
+  "val": {
+    "mae": 0.416831910610199,
+    "rmse": 0.5660841716700437,
+    "r2": 0.9162845611572266,
+    "count": 269659,
+    "mae_macro": 0.41692753784034564,
+    "rmse_macro": 0.5660819905031391,
+    "r2_macro": 0.9153360957684724,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.4290047287940979,
+    "rmse": 0.5885498051938688,
+    "r2": 0.9243429899215698,
+    "count": 131102,
+    "mae_macro": 0.42908999906933826,
+    "rmse_macro": 0.5881444197349996,
+    "r2_macro": 0.923615988181985,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6051.xinyang_moderntcn_hubws.err> for stderr output of this job.
+

@@ -1,0 +1,73 @@
+#!/bin/bash
+#BSUB -J xinyang_store_full_derived
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=64GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full_derived.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_store_full_derived.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/xinyang_7_2_1_server.yaml"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+FEATURE_PRESET="${FEATURE_PRESET:-default_multivariate}"
+STORE_TAG="${STORE_TAG:-xinyang_store_full_derived_core}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+LOOKBACK_STEPS="${LOOKBACK_STEPS:-32}"
+MIN_TARGET_COVERAGE="${MIN_TARGET_COVERAGE:-0.85}"
+INCLUDE_TOWER="${INCLUDE_TOWER:-1}"
+INCLUDE_1MIN="${INCLUDE_1MIN:-1}"
+INCLUDE_DERIVED_CORE="${INCLUDE_DERIVED_CORE:-1}"
+INCLUDE_SPATIAL_CONTEXT="${INCLUDE_SPATIAL_CONTEXT:-0}"
+SPATIAL_DIRECTION_SIGMA_DEG="${SPATIAL_DIRECTION_SIGMA_DEG:-30}"
+SPATIAL_DISTANCE_SCALE_KM="${SPATIAL_DISTANCE_SCALE_KM:-1.0}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$STORE_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+CMD=(
+  python 15min-lead/wind/scripts/build_window_store.py
+  --split-config "$CONFIG_PATH"
+  --lookback-steps "$LOOKBACK_STEPS"
+  --feature-preset "$FEATURE_PRESET"
+  --min-target-coverage "$MIN_TARGET_COVERAGE"
+  --spatial-direction-sigma-deg "$SPATIAL_DIRECTION_SIGMA_DEG"
+  --spatial-distance-scale-km "$SPATIAL_DISTANCE_SCALE_KM"
+  --output-dir "$STORE_DIR"
+)
+
+if [ "$INCLUDE_TOWER" = "1" ]; then
+  CMD+=(--include-tower)
+fi
+
+if [ "$INCLUDE_1MIN" = "1" ]; then
+  CMD+=(--include-1min)
+fi
+
+if [ "$INCLUDE_DERIVED_CORE" = "1" ]; then
+  CMD+=(--include-derived-core)
+fi
+
+if [ "$INCLUDE_SPATIAL_CONTEXT" = "1" ]; then
+  CMD+=(--include-spatial-context)
+fi
+
+"${CMD[@]}"

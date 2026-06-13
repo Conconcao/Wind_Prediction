@@ -168,6 +168,8 @@ Supporting server-side files:
 - `jobs/lsf/xinyang_train_gwnet_full.lsf`
 - `jobs/lsf/xinyang_build_store_full_validfix.lsf`
 - `jobs/lsf/xinyang_train_gwnet_full_validfix.lsf`
+- `jobs/lsf/xinyang_build_store_full_derived_ablation.lsf`
+- `jobs/lsf/xinyang_train_gwnet_full_derived_ablation.lsf`
 - `jobs/lsf/xinyang_build_store_direction_ablation.lsf`
 - `jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf`
 - `jobs/lsf/xinyang_build_store_direct_derived_ablation.lsf`
@@ -310,6 +312,41 @@ with one line:
 ```bash
 python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_derived_core_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_derived_core_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_derived_core --log-stem xinyang_gwnet_direct_derived
 python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_derived_ctx_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_derived_ctx_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_derived_ctx --log-stem xinyang_gwnet_direct_derived
+```
+
+## Full-plus-derived ablations
+
+The next highest-value check after `6073/6075` is whether the same
+direct-derived blocks still add marginal value on top of the current
+strong multivariate `6058` line. Use:
+
+- `jobs/lsf/xinyang_build_store_full_derived_ablation.lsf`
+- `jobs/lsf/xinyang_train_gwnet_full_derived_ablation.lsf`
+
+These scripts fix the `6058` backbone:
+
+- `feature_preset=default_multivariate`
+- `include_tower=1`
+- `include_1min=1`
+- `include_derived_core=1`
+
+and let `spatial_context` switch on or off.
+
+Recommended submissions:
+
+```bash
+STORE_TAG=xinyang_store_full_derived_core INCLUDE_SPATIAL_CONTEXT=0 bsub < jobs/lsf/xinyang_build_store_full_derived_ablation.lsf
+STORE_TAG=xinyang_store_full_derived_core RUN_TAG=gwnet_full_derived_core_run bsub < jobs/lsf/xinyang_train_gwnet_full_derived_ablation.lsf
+
+STORE_TAG=xinyang_store_full_derived_ctx INCLUDE_SPATIAL_CONTEXT=1 bsub < jobs/lsf/xinyang_build_store_full_derived_ablation.lsf
+STORE_TAG=xinyang_store_full_derived_ctx RUN_TAG=gwnet_full_derived_ctx_run bsub < jobs/lsf/xinyang_train_gwnet_full_derived_ablation.lsf
+```
+
+After the training jobs finish, package them with:
+
+```bash
+python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_full_derived_core_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core --log-stem xinyang_gwnet_full_derived
+python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_full_derived_ctx_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_full_derived_ctx_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_ctx --log-stem xinyang_gwnet_full_derived
 ```
 
 ## Single-turbine pure time-series controls

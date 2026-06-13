@@ -199,7 +199,9 @@ def main() -> None:
     target_matrix = store["target_matrix"]
     target_mask = store["target_mask"]
     origin_indices = np.asarray(store["origin_indices"], dtype=np.int64)
+    target_indices = np.asarray(store["target_indices"], dtype=np.int64)
     split_labels = np.asarray(store["split_labels"])
+    timestamps = pd.to_datetime(np.asarray(store["timestamps"]))
     lookback_steps = int(metadata["lookback_steps"])
     horizon_steps = int(metadata["horizon_steps"])
     feature_columns = list(metadata["feature_columns"])
@@ -363,7 +365,7 @@ def main() -> None:
         raise RuntimeError("GraphWaveNet store training finished without a valid checkpoint.")
     model.load_state_dict(best_state)
 
-    val_metrics, val_per_turbine = evaluate_window_model(
+    val_metrics, val_per_turbine, val_predictions = evaluate_window_model(
         model,
         val_loader,
         device=device,
@@ -371,8 +373,11 @@ def main() -> None:
         turbine_order=turbine_order,
         split_name="val",
         supports_builder=support_builder,
+        target_timestamps=timestamps[target_indices[split_labels == "val"]],
+        origin_timestamps=timestamps[val_origins],
+        return_predictions=True,
     )
-    test_metrics, test_per_turbine = evaluate_window_model(
+    test_metrics, test_per_turbine, test_predictions = evaluate_window_model(
         model,
         test_loader,
         device=device,
@@ -380,6 +385,9 @@ def main() -> None:
         turbine_order=turbine_order,
         split_name="test",
         supports_builder=support_builder,
+        target_timestamps=timestamps[target_indices[split_labels == "test"]],
+        origin_timestamps=timestamps[test_origins],
+        return_predictions=True,
     )
 
     output_dir = Path(args.output_dir)
@@ -388,6 +396,8 @@ def main() -> None:
     pd.DataFrame(history).to_csv(output_dir / "training_history.csv", index=False)
     val_per_turbine.to_csv(output_dir / "val_per_turbine.csv", index=False)
     test_per_turbine.to_csv(output_dir / "test_per_turbine.csv", index=False)
+    val_predictions.to_csv(output_dir / "val_predictions.csv", index=False)
+    test_predictions.to_csv(output_dir / "test_predictions.csv", index=False)
     pd.DataFrame([val_metrics, test_metrics]).to_csv(
         output_dir / "metrics.csv",
         index=False,

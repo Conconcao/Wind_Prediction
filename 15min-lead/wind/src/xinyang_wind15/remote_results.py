@@ -14,6 +14,8 @@ DEFAULT_TRAIN_FILES: tuple[str, ...] = (
     "training_history.csv",
     "val_per_turbine.csv",
     "test_per_turbine.csv",
+    "val_predictions.csv",
+    "test_predictions.csv",
     "summary.json",
 )
 

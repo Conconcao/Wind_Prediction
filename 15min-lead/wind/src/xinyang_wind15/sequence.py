@@ -247,7 +247,10 @@ def evaluate_window_model(
     turbine_order: list[str],
     split_name: str,
     supports_builder: Callable[[torch.Tensor], list[torch.Tensor] | None] | None = None,
-) -> tuple[dict[str, Any], pd.DataFrame]:
+    target_timestamps: np.ndarray | pd.Series | list[object] | None = None,
+    origin_timestamps: np.ndarray | pd.Series | list[object] | None = None,
+    return_predictions: bool = False,
+) -> tuple[dict[str, Any], pd.DataFrame] | tuple[dict[str, Any], pd.DataFrame, pd.DataFrame]:
     model.eval()
     all_preds = []
     all_truth = []
@@ -292,7 +295,81 @@ def evaluate_window_model(
     overall["rmse_macro"] = float(per_turbine_df["rmse"].mean(skipna=True))
     overall["r2_macro"] = float(per_turbine_df["r2"].mean(skipna=True))
     overall["split"] = split_name
+    if return_predictions:
+        prediction_df = build_window_prediction_frame(
+            y_true,
+            y_pred,
+            y_mask,
+            turbine_order=turbine_order,
+            split_name=split_name,
+            target_timestamps=target_timestamps,
+            origin_timestamps=origin_timestamps,
+        )
+        return overall, per_turbine_df, prediction_df
     return overall, per_turbine_df
+
+
+def build_window_prediction_frame(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_mask: np.ndarray,
+    *,
+    turbine_order: list[str],
+    split_name: str,
+    target_timestamps: np.ndarray | pd.Series | list[object] | None,
+    origin_timestamps: np.ndarray | pd.Series | list[object] | None = None,
+) -> pd.DataFrame:
+    if target_timestamps is None:
+        raise ValueError("target_timestamps are required when exporting prediction frames.")
+
+    y_true = np.asarray(y_true, dtype=np.float32)
+    y_pred = np.asarray(y_pred, dtype=np.float32)
+    y_mask = np.asarray(y_mask, dtype=bool)
+    target_ts = pd.to_datetime(np.asarray(target_timestamps))
+    if len(target_ts) != y_true.shape[0]:
+        raise ValueError(
+            "target_timestamps length must match the number of prediction rows. "
+            f"Got timestamps={len(target_ts)}, predictions={y_true.shape[0]}."
+        )
+
+    origin_ts = None
+    if origin_timestamps is not None:
+        origin_ts = pd.to_datetime(np.asarray(origin_timestamps))
+        if len(origin_ts) != y_true.shape[0]:
+            raise ValueError(
+                "origin_timestamps length must match the number of prediction rows. "
+                f"Got timestamps={len(origin_ts)}, predictions={y_true.shape[0]}."
+            )
+
+    rows: list[pd.DataFrame] = []
+    for turbine_idx, turbine_id in enumerate(turbine_order):
+        turbine_mask = y_mask[:, turbine_idx]
+        if not np.any(turbine_mask):
+            continue
+        block = pd.DataFrame(
+            {
+                "turbine_id": turbine_id,
+                "target_timestamp": target_ts[turbine_mask],
+                "split": split_name,
+                "y_true": y_true[turbine_mask, turbine_idx],
+                "y_pred": y_pred[turbine_mask, turbine_idx],
+            }
+        )
+        if origin_ts is not None:
+            block.insert(1, "origin_timestamp", origin_ts[turbine_mask])
+        rows.append(block)
+
+    if not rows:
+        columns = ["turbine_id", "target_timestamp", "split", "y_true", "y_pred"]
+        if origin_ts is not None:
+            columns.insert(1, "origin_timestamp")
+        return pd.DataFrame(columns=columns)
+
+    return (
+        pd.concat(rows, ignore_index=True)
+        .sort_values(["turbine_id", "target_timestamp"], kind="mergesort")
+        .reset_index(drop=True)
+    )
 
 
 def masked_mean_loss(loss_tensor: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:

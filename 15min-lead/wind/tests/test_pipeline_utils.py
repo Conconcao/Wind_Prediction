@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pandas as pd
 import pytest
 import torch
@@ -44,6 +46,28 @@ def make_synthetic_scada() -> pd.DataFrame:
                     "cnt_raw": 15,
                 }
             )
+    return pd.DataFrame(rows)
+
+
+def make_synthetic_tower_wide() -> pd.DataFrame:
+    timestamps = pd.date_range("2025-01-01 00:00:00", periods=12, freq="15min")
+    rows = []
+    for timestamp in timestamps:
+        rows.append(
+            {
+                "timestamp": timestamp,
+                "tower_ws_10m": 5.0,
+                "tower_ws_70m": 7.0,
+                "tower_ws_125m": 8.0,
+                "tower_wd_10m": 260.0,
+                "tower_wd_70m": 265.0,
+                "tower_wd_125m": 270.0,
+                "tower_temperature_10m": 20.0,
+                "tower_temperature_125m": 18.0,
+                "tower_pressure_10m": 1000.0,
+                "tower_pressure_125m": 985.0,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -141,6 +165,70 @@ def test_build_timestep_feature_frame_adds_direction_and_yaw_features() -> None:
     first_row = frame.iloc[0]
     assert first_row["yaw_error_deg"] == pytest.approx(90.0)
     assert first_row["yaw_error_abs"] == pytest.approx(90.0)
+
+
+def test_build_timestep_feature_frame_adds_derived_core_features() -> None:
+    scada = make_synthetic_scada()
+    tower_wide = make_synthetic_tower_wide()
+    frame = build_timestep_feature_frame(
+        scada,
+        tower_wide=tower_wide,
+        include_derived_core=True,
+    )
+    first_row = frame.loc[
+        (frame["turbine_id"] == "T02") & (frame["timestamp"] == pd.Timestamp("2025-01-01 00:00:00"))
+    ].iloc[0]
+    expected_alpha_10_125 = math.log(8.0 / 5.0) / math.log(125.0 / 10.0)
+    expected_alpha_70_125 = math.log(8.0 / 7.0) / math.log(125.0 / 70.0)
+    assert first_row["derived_ti_15m"] == pytest.approx(0.1)
+    assert first_row["derived_gust_factor_15m"] == pytest.approx(1.2)
+    assert first_row["derived_gust_excess_15m"] == pytest.approx(0.2)
+    assert first_row["derived_ws_range_15m"] == pytest.approx(0.4)
+    assert first_row["profile_shear_alpha_10m_125m"] == pytest.approx(expected_alpha_10_125)
+    assert first_row["profile_shear_alpha_70m_125m"] == pytest.approx(expected_alpha_70_125)
+    assert first_row["profile_veer_10m_125m_abs"] == pytest.approx(10.0)
+    assert first_row["profile_veer_70m_125m_abs"] == pytest.approx(5.0)
+    assert first_row["profile_temperature_delta_125m_10m"] == pytest.approx(-2.0)
+    assert first_row["profile_pressure_delta_125m_10m"] == pytest.approx(-15.0)
+    assert first_row["hub_tower_ws_125m_delta"] == pytest.approx(-7.0)
+    assert first_row["hub_tower_wd_125m_abs"] == pytest.approx(0.0)
+    assert "profile_shear_alpha_10m_125m_missing" in frame.columns
+    assert first_row["profile_shear_alpha_10m_125m_missing"] == 0
+
+
+def test_build_timestep_feature_frame_adds_spatial_context_features() -> None:
+    scada = make_synthetic_scada()
+    turbine_meta = pd.DataFrame(
+        [
+            {"turbine_id": "T01", "longitude_deg": 120.0, "latitude_deg": 33.0},
+            {"turbine_id": "T02", "longitude_deg": 120.01, "latitude_deg": 33.0},
+        ]
+    )
+    frame = build_timestep_feature_frame(
+        scada,
+        turbine_meta=turbine_meta,
+        include_spatial_context=True,
+        spatial_direction_sigma_deg=20.0,
+        spatial_distance_scale_km=2.0,
+    )
+    t01_row = frame.loc[
+        (frame["turbine_id"] == "T01") & (frame["timestamp"] == pd.Timestamp("2025-01-01 00:00:00"))
+    ].iloc[0]
+    t02_row = frame.loc[
+        (frame["turbine_id"] == "T02") & (frame["timestamp"] == pd.Timestamp("2025-01-01 00:00:00"))
+    ].iloc[0]
+    assert t02_row["ctx_upwind_count"] == pytest.approx(1.0)
+    assert t02_row["ctx_upwind_ws_mean"] == pytest.approx(0.0)
+    assert t02_row["ctx_upwind_power_mean"] == pytest.approx(10.0)
+    assert t02_row["ctx_upwind_ws_gap"] == pytest.approx(1.0)
+    assert t02_row["ctx_upwind_weight_sum"] > 0.0
+    assert t02_row["ctx_upwind_nearest_dist_km"] > 0.0
+    assert t01_row["ctx_upwind_ws_mean"] == pytest.approx(0.0)
+    assert t01_row["ctx_upwind_power_mean"] == pytest.approx(10.0)
+    assert t01_row["ctx_upwind_ws_gap"] == pytest.approx(0.0)
+    assert t01_row["ctx_upwind_nearest_dist_km"] == pytest.approx(0.0)
+    assert t01_row["ctx_upwind_count"] == pytest.approx(0.0)
+
 
 
 def test_estimate_dense_window_bytes() -> None:

@@ -46,6 +46,13 @@ FEATURE_PRESETS: dict[str, list[str]] = {
     ],
 }
 
+FEATURE_BLOCK_PREFIXES: dict[str, tuple[str, ...]] = {
+    "tower": ("tower_",),
+    "one_min": ("m1_",),
+    "derived_core": ("derived_", "profile_", "hub_tower_"),
+    "spatial_context": ("ctx_",),
+}
+
 
 def resolve_feature_columns(
     *,
@@ -60,3 +67,25 @@ def resolve_feature_columns(
             f"Available presets: {sorted(FEATURE_PRESETS)}"
         )
     return list(FEATURE_PRESETS[feature_preset])
+
+
+def append_feature_block_columns(
+    feature_columns: list[str],
+    *,
+    frame_columns: list[str],
+    block_names: list[str],
+) -> list[str]:
+    selected = list(feature_columns)
+    for block_name in block_names:
+        if block_name not in FEATURE_BLOCK_PREFIXES:
+            raise KeyError(
+                f"Unknown feature block: {block_name}. "
+                f"Available blocks: {sorted(FEATURE_BLOCK_PREFIXES)}"
+            )
+        prefixes = FEATURE_BLOCK_PREFIXES[block_name]
+        selected.extend(
+            column
+            for column in frame_columns
+            if column.startswith(prefixes)
+        )
+    return sorted(set(selected))

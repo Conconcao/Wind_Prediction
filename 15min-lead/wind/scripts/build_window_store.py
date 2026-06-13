@@ -14,7 +14,10 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from xinyang_wind15.features import build_timestep_feature_frame  # noqa: E402
-from xinyang_wind15.feature_presets import resolve_feature_columns  # noqa: E402
+from xinyang_wind15.feature_presets import (  # noqa: E402
+    append_feature_block_columns,
+    resolve_feature_columns,
+)
 from xinyang_wind15.graph import (  # noqa: E402
     build_bearing_matrix,
     build_correlation_adjacency,
@@ -64,6 +67,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--include-tower", action="store_true")
     parser.add_argument("--include-1min", action="store_true")
+    parser.add_argument("--include-derived-core", action="store_true")
+    parser.add_argument("--include-spatial-context", action="store_true")
+    parser.add_argument("--spatial-direction-sigma-deg", type=float, default=30.0)
+    parser.add_argument("--spatial-distance-scale-km", type=float, default=1.0)
     parser.add_argument(
         "--min-target-coverage",
         type=float,
@@ -96,24 +103,37 @@ def main() -> None:
             scada_1min,
             origin_timestamps=scada["timestamp"].unique(),
         )
+    turbine_meta = None
+    if args.include_spatial_context:
+        turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
     feature_frame = build_timestep_feature_frame(
         scada,
         tower_wide=tower_wide,
         one_min_agg=one_min_agg,
+        turbine_meta=turbine_meta,
+        include_derived_core=bool(args.include_derived_core),
+        include_spatial_context=bool(args.include_spatial_context),
+        spatial_direction_sigma_deg=float(args.spatial_direction_sigma_deg),
+        spatial_distance_scale_km=float(args.spatial_distance_scale_km),
     )
     feature_columns = resolve_feature_columns(
         feature_preset=args.feature_preset,
         feature_columns=args.feature_columns,
     )
+    feature_blocks: list[str] = []
     if args.include_tower:
-        feature_columns.extend(
-            col for col in feature_frame.columns if col.startswith("tower_")
-        )
+        feature_blocks.append("tower")
     if args.include_1min:
-        feature_columns.extend(
-            col for col in feature_frame.columns if col.startswith("m1_")
-        )
-    feature_columns = sorted(set(feature_columns))
+        feature_blocks.append("one_min")
+    if args.include_derived_core:
+        feature_blocks.append("derived_core")
+    if args.include_spatial_context:
+        feature_blocks.append("spatial_context")
+    feature_columns = append_feature_block_columns(
+        feature_columns,
+        frame_columns=list(feature_frame.columns),
+        block_names=feature_blocks,
+    )
 
     out_dir = Path(args.output_dir)
     metadata = write_window_store(
@@ -127,7 +147,8 @@ def main() -> None:
         min_target_coverage=args.min_target_coverage,
     )
 
-    turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
+    if turbine_meta is None:
+        turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
     adjacency = build_distance_adjacency(turbine_meta, metadata["turbine_order"])
     bearing_matrix = build_bearing_matrix(turbine_meta, metadata["turbine_order"])
     train_scada = scada.loc[
@@ -157,8 +178,12 @@ def main() -> None:
         "bearing_matrix_path": str(out_dir / "bearing_matrix.npy"),
         "include_tower": bool(args.include_tower),
         "include_1min": bool(args.include_1min),
+        "include_derived_core": bool(args.include_derived_core),
+        "include_spatial_context": bool(args.include_spatial_context),
         "feature_preset": str(args.feature_preset),
         "min_target_coverage": float(args.min_target_coverage),
+        "spatial_direction_sigma_deg": float(args.spatial_direction_sigma_deg),
+        "spatial_distance_scale_km": float(args.spatial_distance_scale_km),
         "output_dir": str(out_dir),
     }
     (out_dir / "summary.json").write_text(

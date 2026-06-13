@@ -48,6 +48,22 @@ def build_distance_adjacency(
     *,
     bandwidth_km: float = 0.5,
 ) -> np.ndarray:
+    distance_matrix = build_distance_matrix(turbine_meta, turbine_order)
+    adjacency = np.zeros_like(distance_matrix, dtype=np.float32)
+    for i in range(distance_matrix.shape[0]):
+        for j in range(distance_matrix.shape[1]):
+            if i == j:
+                adjacency[i, j] = 1.0
+                continue
+            dist_km = float(distance_matrix[i, j])
+            adjacency[i, j] = math.exp(-(dist_km**2) / (2.0 * bandwidth_km**2))
+    return adjacency
+
+
+def build_distance_matrix(
+    turbine_meta: pd.DataFrame,
+    turbine_order: Sequence[str],
+) -> np.ndarray:
     lookup = turbine_meta.set_index("turbine_id")
     coords = [
         (
@@ -57,15 +73,13 @@ def build_distance_adjacency(
         for turbine_id in turbine_order
     ]
     n_turbines = len(turbine_order)
-    adjacency = np.zeros((n_turbines, n_turbines), dtype=np.float32)
+    distance_matrix = np.zeros((n_turbines, n_turbines), dtype=np.float32)
     for i, (lon_i, lat_i) in enumerate(coords):
         for j, (lon_j, lat_j) in enumerate(coords):
             if i == j:
-                adjacency[i, j] = 1.0
                 continue
-            dist_km = _haversine_km(lon_i, lat_i, lon_j, lat_j)
-            adjacency[i, j] = math.exp(-(dist_km**2) / (2.0 * bandwidth_km**2))
-    return adjacency
+            distance_matrix[i, j] = _haversine_km(lon_i, lat_i, lon_j, lat_j)
+    return distance_matrix
 
 
 def build_bearing_matrix(

@@ -48,6 +48,7 @@ experiments on the `xinyang` wind farm.
   - intended for larger deep-learning runs where dense window materialization is too expensive
   - supports feature presets such as `default_multivariate`, `hub_ws_only`, `direction_wd_only`, `direction_wd_yaw`, `direction_wd_yaw_error`, and `scada_core`
   - now supports `--min-target-coverage` to avoid discarding windows when only a subset of turbine targets is missing
+  - now also supports `--include-derived-core` and `--include-spatial-context` for direct-derived physics features
 - `scripts/train_gru_baseline.py`
   - trains a local multi-turbine GRU baseline on windowed data
   - supports the same `--include-tower` and `--include-1min` feature ablations
@@ -169,6 +170,8 @@ Supporting server-side files:
 - `jobs/lsf/xinyang_train_gwnet_full_validfix.lsf`
 - `jobs/lsf/xinyang_build_store_direction_ablation.lsf`
 - `jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf`
+- `jobs/lsf/xinyang_build_store_direct_derived_ablation.lsf`
+- `jobs/lsf/xinyang_train_gwnet_direct_derived_ablation.lsf`
 - `jobs/slurm/xinyang_build_store_full.slurm`
 - `jobs/slurm/xinyang_train_gwnet_full.slurm`
 
@@ -244,6 +247,69 @@ FEATURE_PRESET=direction_wd_yaw_error STORE_TAG=xinyang_store_direction_wd_yaw_e
 STORE_TAG=xinyang_store_direction_wd_yaw_error RUN_TAG=gwnet_direction_wd_yaw_error_run bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
 
 STORE_TAG=xinyang_store_direction_wd_yaw_error RUN_TAG=gwnet_direction_wd_yaw_error_dyn_run DYNAMIC_DIRECTIONAL_SUPPORT=1 DIRECTION_SUPPORT_SOURCE=wd_sincos bsub < jobs/lsf/xinyang_train_gwnet_direction_ablation.lsf
+```
+
+## Direct-derived feature blocks
+
+Two new optional feature blocks are now wired into both
+`build_window_store.py` and `build_window_dataset.py`:
+
+- `--include-derived-core`
+  - `derived_ti_15m`, `derived_gust_factor_15m`, `derived_gust_excess_15m`
+  - tower-profile shear and veer features such as
+    `profile_shear_alpha_10m_125m`, `profile_veer_10m_125m_*`
+  - hub-versus-tower mismatch features such as
+    `hub_tower_ws_125m_delta`, `hub_tower_wd_125m_*`
+- `--include-spatial-context`
+  - direction-aware upwind context features based on current wind direction
+    and turbine layout
+  - examples:
+    `ctx_upwind_ws_mean`, `ctx_upwind_power_mean`,
+    `ctx_upwind_ws_gap`, `ctx_upwind_nearest_dist_km`
+
+These blocks are meant for the next gain-attribution round on top of the
+current `GWNet` line. A compact local smoke example is:
+
+```bash
+python 15min-lead/wind/scripts/build_window_store.py \
+  --output-dir 15min-lead/wind/artifacts/local_debug/xinyang_store_derived_ctx_smoke \
+  --feature-preset scada_core \
+  --include-tower \
+  --include-derived-core \
+  --include-spatial-context \
+  --max-turbines 4 \
+  --tail-timestamps 64
+```
+
+## Server-side direct-derived ablations
+
+For the next full-farm `GWNet` gain-attribution round, use the new
+parameterized `LSF` pair:
+
+- `jobs/lsf/xinyang_build_store_direct_derived_ablation.lsf`
+- `jobs/lsf/xinyang_train_gwnet_direct_derived_ablation.lsf`
+
+Recommended store and run tags:
+
+- `xinyang_store_derived_core` / `gwnet_derived_core_run`
+- `xinyang_store_derived_ctx` / `gwnet_derived_ctx_run`
+
+Example submissions:
+
+```bash
+FEATURE_PRESET=scada_core STORE_TAG=xinyang_store_derived_core INCLUDE_TOWER=1 INCLUDE_DERIVED_CORE=1 INCLUDE_SPATIAL_CONTEXT=0 bsub < jobs/lsf/xinyang_build_store_direct_derived_ablation.lsf
+STORE_TAG=xinyang_store_derived_core RUN_TAG=gwnet_derived_core_run bsub < jobs/lsf/xinyang_train_gwnet_direct_derived_ablation.lsf
+
+FEATURE_PRESET=scada_core STORE_TAG=xinyang_store_derived_ctx INCLUDE_TOWER=1 INCLUDE_DERIVED_CORE=1 INCLUDE_SPATIAL_CONTEXT=1 bsub < jobs/lsf/xinyang_build_store_direct_derived_ablation.lsf
+STORE_TAG=xinyang_store_derived_ctx RUN_TAG=gwnet_derived_ctx_run bsub < jobs/lsf/xinyang_train_gwnet_direct_derived_ablation.lsf
+```
+
+After each training job finishes, package the result back into the repo
+with one line:
+
+```bash
+python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_derived_core_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_derived_core_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_derived_core --log-stem xinyang_gwnet_direct_derived
+python 15min-lead/wind/scripts/package_remote_run.py --job-id <jobid> --run-name xinyang_gwnet_derived_ctx_<jobid> --train-dir 15min-lead/wind/artifacts/server_runs/gwnet_derived_ctx_run --store-dir 15min-lead/wind/artifacts/server_runs/xinyang_store_derived_ctx --log-stem xinyang_gwnet_direct_derived
 ```
 
 ## Single-turbine pure time-series controls

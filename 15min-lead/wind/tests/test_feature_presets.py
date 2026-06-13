@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from xinyang_wind15.feature_presets import resolve_feature_columns
+from xinyang_wind15.feature_presets import append_feature_block_columns, resolve_feature_columns
 
 
 def test_resolve_feature_columns_hub_ws_only() -> None:
@@ -38,4 +38,25 @@ def test_direction_feature_presets() -> None:
         "yaw_error_sin",
         "yaw_error_cos",
         "yaw_error_abs",
+    ]
+
+
+def test_append_feature_block_columns() -> None:
+    columns = append_feature_block_columns(
+        ["ws_mean"],
+        frame_columns=[
+            "ws_mean",
+            "tower_ws_125m",
+            "derived_ti_15m",
+            "ctx_upwind_ws_mean",
+            "ctx_upwind_ws_mean_missing",
+        ],
+        block_names=["tower", "derived_core", "spatial_context"],
+    )
+    assert columns == [
+        "ctx_upwind_ws_mean",
+        "ctx_upwind_ws_mean_missing",
+        "derived_ti_15m",
+        "tower_ws_125m",
+        "ws_mean",
     ]

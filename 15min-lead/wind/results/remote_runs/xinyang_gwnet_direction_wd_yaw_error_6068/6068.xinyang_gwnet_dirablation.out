@@ -1,0 +1,200 @@
+Subject: Job 6068: <xinyang_gwnet_dirablation> in cluster <asc2> Done
+
+Job <xinyang_gwnet_dirablation> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jun 12 21:59:30 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jun 12 21:59:30 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jun 12 21:59:30 2026
+Terminated at Fri Jun 12 22:02:00 2026
+Results reported at Fri Jun 12 22:02:00 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J xinyang_gwnet_dirablation
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -W 10:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gwnet_dirablation.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.xinyang_gwnet_dirablation.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_TAG="${STORE_TAG:-xinyang_store_direction_wd}"
+RUN_TAG="${RUN_TAG:-gwnet_direction_wd_run}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$RUN_TAG"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+SUPPORT_MODE="${SUPPORT_MODE:-distance_correlation}"
+EPOCHS="${EPOCHS:-30}"
+BATCH_SIZE="${BATCH_SIZE:-64}"
+DYNAMIC_DIRECTIONAL_SUPPORT="${DYNAMIC_DIRECTIONAL_SUPPORT:-0}"
+DIRECTION_SUPPORT_SOURCE="${DIRECTION_SUPPORT_SOURCE:-auto}"
+DIRECTION_SUPPORT_SIGMA_DEG="${DIRECTION_SUPPORT_SIGMA_DEG:-35}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+CMD=(
+  python 15min-lead/wind/scripts/train_gwnet_from_store.py
+  --store-dir "$STORE_DIR"
+  --support-mode "$SUPPORT_MODE"
+  --epochs "$EPOCHS"
+  --batch-size "$BATCH_SIZE"
+  --residual-channels 32
+
+(... more ...)
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   161.88 sec.
+    Max Memory :                                 899 MB
+    Average Memory :                             834.74 MB
+    Total Requested Memory :                     32768.00 MB
+    Delta Memory :                               31869.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                25
+    Run time :                                   150 sec.
+    Turnaround time :                            150 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/xinyang_store_direction_wd_yaw_error",
+    "x_train_windows": 18926,
+    "x_val_windows": 6032,
+    "x_test_windows": 2941,
+    "lookback_steps": 32,
+    "horizon_steps": 1,
+    "feature_columns": [
+      "nacelle_cos",
+      "nacelle_sin",
+      "wd_cos",
+      "wd_sin",
+      "ws_mean",
+      "yaw_error_abs",
+      "yaw_error_cos",
+      "yaw_error_sin"
+    ],
+    "turbine_order": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25",
+      "S26",
+      "S27",
+      "S28",
+      "S29",
+      "S30",
+      "S31",
+      "S32",
+      "S33",
+      "S34",
+      "S35",
+      "S36",
+      "S37",
+      "S38",
+      "S39",
+      "S40",
+      "S41",
+      "S42",
+      "S43",
+      "S44",
+      "S45",
+      "S46"
+    ],
+    "min_target_coverage": 0.85,
+    "min_target_count": 40,
+    "supports": 2,
+    "support_mode": "distance_correlation",
+    "adaptive_adj": true,
+    "dynamic_directional_support": false,
+    "direction_support_source": "auto",
+    "direction_support_sigma_deg": 35.0,
+    "residual_channels": 32,
+    "dilation_channels": 32,
+    "skip_channels": 128,
+    "end_channels": 256,
+    "kernel_size": 2,
+    "blocks": 2,
+    "layers": 2,
+    "graph_order": 2,
+    "num_workers": 0,
+    "stats_chunk_size": 32,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/gwnet_direction_wd_yaw_error_run"
+  },
+  "val": {
+    "mae": 0.3850608766078949,
+    "rmse": 0.5186978302425779,
+    "r2": 0.9297134280204773,
+    "count": 269659,
+    "mae_macro": 0.3851610946914424,
+    "rmse_macro": 0.5185836774153182,
+    "r2_macro": 0.928931871186132,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.3891516625881195,
+    "rmse": 0.5296598083999553,
+    "r2": 0.9387259483337402,
+    "count": 131102,
+    "mae_macro": 0.3892258010480715,
+    "rmse_macro": 0.529176340564849,
+    "r2_macro": 0.9380987778953884,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6068.xinyang_gwnet_dirablation.err> for stderr output of this job.
+

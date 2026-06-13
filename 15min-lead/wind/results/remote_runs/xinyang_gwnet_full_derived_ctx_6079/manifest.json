@@ -29,6 +29,14 @@
       "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_ctx_6079/test_per_turbine.csv"
     },
     {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_ctx_run/val_predictions.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_ctx_6079/val_predictions.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_ctx_run/test_predictions.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_ctx_6079/test_predictions.csv"
+    },
+    {
       "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_ctx_run/summary.json",
       "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_ctx_6079/summary.json"
     }

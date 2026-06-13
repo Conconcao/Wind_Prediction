@@ -1,0 +1,66 @@
+{
+  "run_name": "xinyang_gwnet_full_derived_core_6077",
+  "job_id": "6077",
+  "train_dir": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run",
+  "store_dir": "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core",
+  "log_dir": "logs",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077",
+  "max_log_lines": 200,
+  "log_stem": "xinyang_gwnet_full_derived",
+  "copied_train_files": [
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/metrics.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/metrics.json"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/metrics.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/metrics.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/training_history.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/training_history.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/val_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/val_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/test_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/test_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/summary.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/summary.json"
+    }
+  ],
+  "store_summary": {
+    "source": "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/summary.json",
+    "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/store_summary.json"
+  },
+  "tailed_logs": [
+    {
+      "source": "logs/6077.xinyang_gwnet_full_derived.out",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/6077.xinyang_gwnet_full_derived.out"
+    },
+    {
+      "source": "logs/6077.xinyang_gwnet_full_derived.err",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/xinyang_gwnet_full_derived_core_6077/6077.xinyang_gwnet_full_derived.err"
+    }
+  ],
+  "excluded_large_files": [
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/gwnet_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/agcrn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/mtgnn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/moderntcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/gru_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/gwnet_full_derived_core_run/tcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/feature_tensor.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/target_matrix.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/origin_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/target_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/target_mask.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/split_labels.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/distance_adjacency.npy",
+    "15min-lead/wind/artifacts/server_runs/xinyang_store_full_derived_core/correlation_adjacency.npy"
+  ]
+}

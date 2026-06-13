@@ -1,0 +1,200 @@
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_gwnet_from_store.py \
+  --store-dir "$STORE_DIR" \
+
+(... more ...)
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   8975.04 sec.
+    Max Memory :                                 962 MB
+    Average Memory :                             780.52 MB
+    Total Requested Memory :                     65536.00 MB
+    Delta Memory :                               64574.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                150
+    Run time :                                   383 sec.
+    Turnaround time :                            368 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/xinyang_store_derived_core",
+    "x_train_windows": 18926,
+    "x_val_windows": 6032,
+    "x_test_windows": 2941,
+    "lookback_steps": 32,
+    "horizon_steps": 1,
+    "feature_columns": [
+      "cnt_raw",
+      "derived_gust_excess_15m",
+      "derived_gust_factor_15m",
+      "derived_ti_15m",
+      "derived_ws_range_15m",
+      "hub_tower_wd_125m_abs",
+      "hub_tower_wd_125m_abs_missing",
+      "hub_tower_wd_125m_cos",
+      "hub_tower_wd_125m_cos_missing",
+      "hub_tower_wd_125m_sin",
+      "hub_tower_wd_125m_sin_missing",
+      "hub_tower_ws_125m_delta",
+      "hub_tower_ws_125m_delta_missing",
+      "nacelle_mean",
+      "power_mean",
+      "profile_shear_alpha_10m_125m",
+      "profile_shear_alpha_10m_125m_missing",
+      "profile_shear_alpha_70m_125m",
+      "profile_shear_alpha_70m_125m_missing",
+      "profile_veer_10m_125m_abs",
+      "profile_veer_10m_125m_abs_missing",
+      "profile_veer_10m_125m_cos",
+      "profile_veer_10m_125m_cos_missing",
+      "profile_veer_10m_125m_sin",
+      "profile_veer_10m_125m_sin_missing",
+      "profile_veer_70m_125m_abs",
+      "profile_veer_70m_125m_abs_missing",
+      "profile_veer_70m_125m_cos",
+      "profile_veer_70m_125m_cos_missing",
+      "profile_veer_70m_125m_sin",
+      "profile_veer_70m_125m_sin_missing",
+      "tower_humidity_10m",
+      "tower_humidity_10m_missing",
+      "tower_pressure_10m",
+      "tower_pressure_10m_missing",
+      "tower_temperature_10m",
+      "tower_temperature_10m_missing",
+      "tower_wd_10m",
+      "tower_wd_10m_missing",
+      "tower_wd_125m",
+      "tower_wd_125m_missing",
+      "tower_wd_30m",
+      "tower_wd_30m_missing",
+      "tower_wd_50m",
+      "tower_wd_50m_missing",
+      "tower_wd_70m",
+      "tower_wd_70m_missing",
+      "tower_ws_10m",
+      "tower_ws_10m_missing",
+      "tower_ws_125m",
+      "tower_ws_125m_missing",
+      "tower_ws_30m",
+      "tower_ws_30m_missing",
+      "tower_ws_50m",
+      "tower_ws_50m_missing",
+      "tower_ws_70m",
+      "tower_ws_70m_missing",
+      "wd_mean",
+      "ws_mean",
+      "ws_std"
+    ],
+    "turbine_order": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25",
+      "S26",
+      "S27",
+      "S28",
+      "S29",
+      "S30",
+      "S31",
+      "S32",
+      "S33",
+      "S34",
+      "S35",
+      "S36",
+      "S37",
+      "S38",
+      "S39",
+      "S40",
+      "S41",
+      "S42",
+      "S43",
+      "S44",
+      "S45",
+      "S46"
+    ],
+    "min_target_coverage": 0.85,
+    "min_target_count": 40,
+    "supports": 2,
+    "support_mode": "distance_correlation",
+    "adaptive_adj": true,
+    "dynamic_directional_support": false,
+    "direction_support_source": "auto",
+    "direction_support_sigma_deg": 35.0,
+    "residual_channels": 32,
+    "dilation_channels": 32,
+    "skip_channels": 128,
+    "end_channels": 256,
+    "kernel_size": 2,
+    "blocks": 2,
+    "layers": 2,
+    "graph_order": 2,
+    "num_workers": 0,
+    "stats_chunk_size": 32,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/gwnet_derived_core_run"
+  },
+  "val": {
+    "mae": 0.39128178358078003,
+    "rmse": 0.5241843915842391,
+    "r2": 0.9282186031341553,
+    "count": 269659,
+    "mae_macro": 0.39138736802598706,
+    "rmse_macro": 0.5240246954613605,
+    "r2_macro": 0.9274058458597764,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.39148104190826416,
+    "rmse": 0.5278516231150928,
+    "r2": 0.9391435980796814,
+    "count": 131102,
+    "mae_macro": 0.3915841333244158,
+    "rmse_macro": 0.5274620643442597,
+    "r2_macro": 0.9385245442390442,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6073.xinyang_gwnet_direct_derived.err> for stderr output of this job.
+

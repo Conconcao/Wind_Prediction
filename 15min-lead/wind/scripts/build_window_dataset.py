@@ -23,6 +23,7 @@ from xinyang_wind15.loading import (  # noqa: E402
     load_scada_1min,
     load_turbine_metadata,
 )
+from xinyang_wind15.settings import default_split_config_path  # noqa: E402
 from xinyang_wind15.settings import load_settings  # noqa: E402
 from xinyang_wind15.windows import (  # noqa: E402
     build_spatiotemporal_windows,
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--split-config",
-        default=str(PROJECT_DIR / "configs" / "splits" / "xinyang_7_2_1.yaml"),
+        default=str(default_split_config_path(PROJECT_DIR)),
     )
     parser.add_argument(
         "--output-dir",

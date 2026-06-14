@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,21 @@ def _to_timestamp(value: str) -> pd.Timestamp:
     return pd.Timestamp(value)
 
 
+def default_split_config_path(
+    project_dir: str | Path,
+    *,
+    prefer_server: bool | None = None,
+) -> Path:
+    root = Path(project_dir)
+    splits_dir = root / "configs" / "splits"
+    local_config = splits_dir / "xinyang_7_2_1.yaml"
+    server_config = splits_dir / "xinyang_7_2_1_server.yaml"
+    use_server = (os.name != "nt") if prefer_server is None else bool(prefer_server)
+    if use_server and server_config.exists():
+        return server_config
+    return local_config
+
+
 def load_settings(path: str | Path) -> ExperimentSettings:
     config_path = Path(path)
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -59,4 +75,3 @@ def load_settings(path: str | Path) -> ExperimentSettings:
         split_bounds=bounds,
         raw=raw,
     )
-

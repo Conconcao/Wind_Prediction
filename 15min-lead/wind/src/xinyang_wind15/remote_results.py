@@ -26,6 +26,7 @@ DEFAULT_MODEL_ARTIFACTS: tuple[str, ...] = (
     "moderntcn_baseline.pt",
     "gru_baseline.pt",
     "tcn_baseline.pt",
+    "cfc_baseline.pt",
 )
 
 

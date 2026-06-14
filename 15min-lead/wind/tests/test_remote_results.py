@@ -21,6 +21,8 @@ def test_package_remote_run_collects_expected_summary_files(tmp_path: Path) -> N
         "training_history.csv",
         "val_per_turbine.csv",
         "test_per_turbine.csv",
+        "val_predictions.csv",
+        "test_predictions.csv",
         "summary.json",
     ):
         (train_dir / file_name).write_text(f"content for {file_name}\n", encoding="utf-8")
@@ -76,6 +78,8 @@ def test_package_remote_run_can_skip_store_summary_for_dense_runs(tmp_path: Path
         "training_history.csv",
         "val_per_turbine.csv",
         "test_per_turbine.csv",
+        "val_predictions.csv",
+        "test_predictions.csv",
         "summary.json",
     ):
         (train_dir / file_name).write_text(f"content for {file_name}\n", encoding="utf-8")

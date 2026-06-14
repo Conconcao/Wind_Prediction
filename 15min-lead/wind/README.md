@@ -34,6 +34,7 @@ experiments on the `xinyang` wind farm.
 - Window-store validity logic updated to use causal feature filling plus masked targets
 - AGCRN, MTGNN, and ModernTCN experiment entry points added
 - Single-turbine GRU/TCN control runs can now be launched by turbine id
+- Single-turbine CfC control run is now available for liquid-network comparison
 
 ## Available scripts
 
@@ -55,6 +56,9 @@ experiments on the `xinyang` wind farm.
 - `scripts/train_tcn_baseline.py`
   - trains a local multi-turbine TCN baseline on the same windowed inputs
   - follows the causal dilated-convolution pattern from the mature locuslab TCN line
+- `scripts/train_cfc_baseline.py`
+  - trains a local CfC baseline using the official `ncps` implementation
+  - intended first for single-turbine controls before any graph-plus-CfC hybrid work
 - `scripts/train_tcn_from_store.py`
   - trains the TCN baseline from the disk-backed store via lazy window loading
 - `scripts/train_gwnet_from_store.py`
@@ -216,6 +220,7 @@ Server-side `LSF` entry points for this setup:
 - `jobs/lsf/xinyang_train_moderntcn_hubws_joint.lsf`
 - `jobs/lsf/xinyang_train_gru_single_turbine.lsf`
 - `jobs/lsf/xinyang_train_tcn_single_turbine.lsf`
+- `jobs/lsf/xinyang_train_cfc_single_turbine.lsf`
 
 ## Direction and yaw ablations
 
@@ -365,6 +370,11 @@ python 15min-lead/wind/scripts/train_tcn_baseline.py \
   --turbine-id S29 \
   --feature-columns ws_mean \
   --max-turbines 1
+
+python 15min-lead/wind/scripts/train_cfc_baseline.py \
+  --turbine-id S29 \
+  --feature-columns ws_mean \
+  --max-turbines 1
 ```
 
 Server-side `LSF` single-turbine controls default to `S29`, but you can
@@ -373,6 +383,7 @@ override the turbine id at submit time:
 ```bash
 TURBINE_ID=S29 bsub < jobs/lsf/xinyang_train_gru_single_turbine.lsf
 TURBINE_ID=S29 bsub < jobs/lsf/xinyang_train_tcn_single_turbine.lsf
+TURBINE_ID=S29 bsub < jobs/lsf/xinyang_train_cfc_single_turbine.lsf
 ```
 
 ## Packaging non-GWNet runs
@@ -387,6 +398,13 @@ python 15min-lead/wind/scripts/package_remote_run.py \
   --run-name xinyang_gru_single_s29_<jobid> \
   --train-dir 15min-lead/wind/artifacts/server_runs/gru_single_S29 \
   --log-stem xinyang_gru_single \
+  --skip-store-summary
+
+python 15min-lead/wind/scripts/package_remote_run.py \
+  --job-id <jobid> \
+  --run-name xinyang_cfc_single_s29_<jobid> \
+  --train-dir 15min-lead/wind/artifacts/server_runs/cfc_single_S29 \
+  --log-stem xinyang_cfc_single \
   --skip-store-summary
 ```
 

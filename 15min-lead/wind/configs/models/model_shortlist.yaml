@@ -55,6 +55,9 @@ single_turbine_controls:
   - name: tcn_single_turbine
     priority: high
     notes: "Pure time-series control on one selected turbine"
+  - name: cfc_single_turbine
+    priority: medium
+    notes: "Continuous-time recurrent control to test whether liquid-style dynamics help single-turbine forecasting"
 
 training:
   loss_candidates: [huber, mse]

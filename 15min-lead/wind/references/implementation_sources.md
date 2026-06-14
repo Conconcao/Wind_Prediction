@@ -69,3 +69,9 @@ documentation instead of ad-hoc reimplementation where possible.
    - Reference model files:
      <https://github.com/luodhhh/ModernTCN/blob/main/ModernTCN-short-term/models/ModernTCN.py>
      <https://github.com/luodhhh/ModernTCN/blob/main/ModernTCN-short-term/models/ModernTCN_Layer.py>
+
+12. Closed-form Continuous-time Neural Network reference
+   - Paper: <https://www.nature.com/articles/s42256-022-00556-7>
+   - GitHub / official package: <https://github.com/mlech26l/ncps>
+   - PyTorch CfC implementation:
+     <https://github.com/mlech26l/ncps/blob/master/ncps/torch/cfc.py>

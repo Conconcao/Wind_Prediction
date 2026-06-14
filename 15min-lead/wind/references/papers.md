@@ -58,3 +58,12 @@
       Speed Prediction
     - Link: <https://www.mdpi.com/2076-3417/14/15/6741>
 
+## Continuous-time sequence papers
+
+11. Hasani et al. (2021)
+    - Title: Liquid Time-constant Networks
+    - Link: <https://arxiv.org/abs/2006.04439>
+
+12. Lechner et al. (2023)
+    - Title: Closed-form Continuous-time Neural Networks
+    - Link: <https://www.nature.com/articles/s42256-022-00556-7>

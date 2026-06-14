@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from xinyang_wind15.agcrn import AGCRNSeq2One
+from xinyang_wind15.cfc import MultiTurbineCfC
 from xinyang_wind15.graph import build_graph_wavenet_supports
 from xinyang_wind15.gru import MultiTurbineGRU
 from xinyang_wind15.modern_tcn import ModernTCNForecaster
@@ -31,6 +32,20 @@ def test_multi_turbine_tcn_forward_shape() -> None:
         channel_sizes=[16, 16, 16],
         kernel_size=3,
         dropout=0.1,
+    )
+    x = torch.randn(8, 32, 4, 6)
+    y = model(x)
+    assert tuple(y.shape) == (8, 4)
+
+
+def test_multi_turbine_cfc_forward_shape() -> None:
+    model = MultiTurbineCfC(
+        n_turbines=4,
+        n_features=6,
+        hidden_size=16,
+        backbone_units=32,
+        backbone_layers=1,
+        backbone_dropout=0.0,
     )
     x = torch.randn(8, 32, 4, 6)
     y = model(x)

@@ -1,0 +1,26 @@
+experiment:
+  name: huaian_1min_raw_ws_15min_ahead
+  site: huaian
+  target_column: "ws"
+  target_mode: point
+  horizon_steps: 15
+  base_resolution_minutes: 1
+
+data:
+  scada_1min: "/home3/s502024280003/Wind_Prediction/data/huaian/ALL_TURBINES_1min_202307-202512.parquet"
+  turbine_meta: "/home3/s502024280003/Wind_Prediction/data/huaian/风机基本信息.csv"
+
+split:
+  method: chronological_ratio
+  ratio:
+    train: 0.7
+    val: 0.1
+    test: 0.2
+  data_window_start: "2023-07-03 00:00:00"
+  data_window_end: "2025-07-03 23:59:00"
+
+modeling:
+  lookback_steps: 60
+  feature_columns:
+    - ws
+  min_target_coverage: 1.0

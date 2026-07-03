@@ -1,0 +1,26 @@
+#!/bin/bash
+#BSUB -J huaian_1min_store
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 08:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_store.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_store.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/huaian_1min_raw_7_1_2_server.yaml"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$STORE_DIR"
+cd "$PROJECT_ROOT"
+
+python --version
+
+python 15min-lead/wind/scripts/build_raw_one_min_store.py \
+  --config "$CONFIG_PATH" \
+  --output-dir "$STORE_DIR"

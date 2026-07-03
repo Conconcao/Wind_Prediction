@@ -14,9 +14,12 @@ DEFAULT_TRAIN_FILES: tuple[str, ...] = (
     "training_history.csv",
     "val_per_turbine.csv",
     "test_per_turbine.csv",
+    "summary.json",
+)
+
+PREDICTION_FILES: tuple[str, ...] = (
     "val_predictions.csv",
     "test_predictions.csv",
-    "summary.json",
 )
 
 DEFAULT_MODEL_ARTIFACTS: tuple[str, ...] = (
@@ -40,6 +43,7 @@ class RemoteRunPackageSpec:
     output_root: Path
     max_log_lines: int = 200
     train_files: tuple[str, ...] = DEFAULT_TRAIN_FILES
+    include_predictions: bool = False
     log_stem: str = "xinyang_gwnet_full"
     include_store_summary: bool = True
     model_artifacts: tuple[str, ...] = DEFAULT_MODEL_ARTIFACTS
@@ -80,7 +84,10 @@ def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
     output_dir = Path(spec.output_root) / spec.run_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    copied_train = _copy_required_files(train_dir, output_dir, spec.train_files)
+    train_files = tuple(spec.train_files)
+    if spec.include_predictions:
+        train_files = tuple([*train_files, *PREDICTION_FILES])
+    copied_train = _copy_required_files(train_dir, output_dir, train_files)
 
     store_summary_manifest = None
     if spec.include_store_summary:
@@ -130,6 +137,11 @@ def package_remote_run(spec: RemoteRunPackageSpec) -> dict[str, object]:
             {"source": str(err_log_src), "target": str(err_log_dest)},
         ],
         "excluded_large_files": [
+            *(
+                []
+                if spec.include_predictions
+                else [str(train_dir / file_name) for file_name in PREDICTION_FILES]
+            ),
             *[str(train_dir / file_name) for file_name in spec.model_artifacts],
             *(
                 []

@@ -43,6 +43,12 @@ def parse_args() -> argparse.Namespace:
         help="Skip copying store_summary.json. Useful for single-turbine dense-window runs.",
     )
     parser.add_argument(
+        "--include-predictions",
+        action="store_true",
+        help="Also copy val_predictions.csv and test_predictions.csv. Disabled by default because "
+        "these files can exceed GitHub's 100 MB file limit.",
+    )
+    parser.add_argument(
         "--log-dir",
         default="logs",
         help="Directory containing LSF stdout/stderr logs.",
@@ -78,6 +84,7 @@ def main() -> None:
             log_dir=Path(args.log_dir),
             output_root=Path(args.output_root),
             max_log_lines=int(args.max_log_lines),
+            include_predictions=bool(args.include_predictions),
             log_stem=str(args.log_stem),
             include_store_summary=not bool(args.skip_store_summary),
         )

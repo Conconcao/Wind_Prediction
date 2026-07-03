@@ -156,6 +156,20 @@ def _load_scada_15min_direction(path: str | Path) -> pd.DataFrame:
     )
 
 
+def load_scada_15min_direction(
+    path: str | Path,
+    *,
+    max_turbines: int | None = None,
+    turbine_ids: Sequence[str] | None = None,
+    tail_timestamps: int | None = None,
+) -> pd.DataFrame:
+    df = _load_scada_15min_direction(path)
+    df = _filter_specific_turbines(df, "turbine_id", turbine_ids)
+    df = _filter_turbines(df, "turbine_id", max_turbines)
+    df = _filter_time_tail(df, "timestamp", tail_timestamps)
+    return df.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)
+
+
 def _merge_scada_15min_direction(
     scada_df: pd.DataFrame,
     direction_df: pd.DataFrame,

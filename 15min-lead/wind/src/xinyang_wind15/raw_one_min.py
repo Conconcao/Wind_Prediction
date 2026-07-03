@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from .features import add_directional_features, add_relative_direction_features
+from .schema import SCADA_15MIN_DIRECTION_COLUMNS
 from .settings import SplitBounds
 
 
@@ -142,6 +144,53 @@ def add_time_cyclic_features(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def merge_direction_15min_snapshots(
+    scada_1min: pd.DataFrame,
+    direction_15min: pd.DataFrame,
+    *,
+    tolerance_minutes: int = 15,
+) -> pd.DataFrame:
+    if direction_15min.empty:
+        return scada_1min.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)
+    direction_columns = [
+        column
+        for column in SCADA_15MIN_DIRECTION_COLUMNS
+        if column in direction_15min.columns and not direction_15min[column].isna().all()
+    ]
+    if not direction_columns:
+        return scada_1min.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)
+    tolerance = pd.Timedelta(minutes=int(tolerance_minutes))
+    right = direction_15min.loc[:, ["turbine_id", "timestamp", *direction_columns]].copy()
+    merged_blocks: list[pd.DataFrame] = []
+    for turbine_id, left_group in scada_1min.groupby("turbine_id", sort=False):
+        left_group = left_group.sort_values("timestamp").reset_index(drop=True).copy()
+        right_group = (
+            right.loc[right["turbine_id"] == turbine_id]
+            .sort_values("timestamp")
+            .reset_index(drop=True)
+            .copy()
+        )
+        if right_group.empty:
+            for column in direction_columns:
+                left_group[column] = np.nan
+            merged_blocks.append(left_group)
+            continue
+        merged_group = pd.merge_asof(
+            left_group,
+            right_group,
+            on="timestamp",
+            direction="backward",
+            tolerance=tolerance,
+            suffixes=("", "_direction"),
+        )
+        if "turbine_id_direction" in merged_group.columns:
+            merged_group = merged_group.drop(columns=["turbine_id_direction"])
+        merged_blocks.append(merged_group)
+    return pd.concat(merged_blocks, ignore_index=True).sort_values(
+        ["turbine_id", "timestamp"]
+    ).reset_index(drop=True)
+
+
 def build_raw_one_min_feature_frame(
     scada_1min: pd.DataFrame,
     *,
@@ -150,11 +199,25 @@ def build_raw_one_min_feature_frame(
 ) -> pd.DataFrame:
     out = scada_1min.loc[:, ["turbine_id", "timestamp", "ws"]].copy()
     out["ws"] = pd.to_numeric(out["ws"], errors="coerce")
-    if include_direction_if_available and "wd" in scada_1min.columns and scada_1min["wd"].notna().any():
-        wd = pd.to_numeric(scada_1min["wd"], errors="coerce")
-        wd_rad = np.deg2rad(np.remainder(wd, 360.0))
-        out["wd_sin"] = np.sin(wd_rad)
-        out["wd_cos"] = np.cos(wd_rad)
+    if include_direction_if_available:
+        for column in ("wd_mean", "wd_std", "nacelle_mean", "nacelle_std"):
+            if column in scada_1min.columns and scada_1min[column].notna().any():
+                out[column] = pd.to_numeric(scada_1min[column], errors="coerce")
+        if "wd_mean" in out.columns:
+            out = add_directional_features(out, source_col="wd_mean", prefix="wd")
+        elif "wd" in scada_1min.columns and scada_1min["wd"].notna().any():
+            wd = pd.to_numeric(scada_1min["wd"], errors="coerce")
+            wd_rad = np.deg2rad(np.remainder(wd, 360.0))
+            out["wd_sin"] = np.sin(wd_rad)
+            out["wd_cos"] = np.cos(wd_rad)
+        if "nacelle_mean" in out.columns:
+            out = add_directional_features(out, source_col="nacelle_mean", prefix="nacelle")
+        if "wd_mean" in out.columns and "nacelle_mean" in out.columns:
+            out = add_relative_direction_features(
+                out,
+                wind_direction_col="wd_mean",
+                yaw_direction_col="nacelle_mean",
+            )
     if include_time_features:
         out = add_time_cyclic_features(out)
     return out.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)

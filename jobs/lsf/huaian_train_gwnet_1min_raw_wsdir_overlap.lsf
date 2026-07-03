@@ -1,0 +1,40 @@
+#!/bin/bash
+#BSUB -J huaian_1min_gwnet_wsdir
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 12:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_gwnet_wsdir.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_gwnet_wsdir.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_wsdir_overlap_store"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_gwnet_wsdir_overlap_run"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+python --version
+
+python 15min-lead/wind/scripts/train_gwnet_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --support-mode distance_correlation \
+  --dynamic-directional-support \
+  --direction-support-source wd_mean \
+  --direction-support-sigma-deg 35.0 \
+  --epochs 20 \
+  --batch-size 64 \
+  --residual-channels 32 \
+  --dilation-channels 32 \
+  --skip-channels 128 \
+  --end-channels 256 \
+  --kernel-size 2 \
+  --blocks 2 \
+  --layers 2 \
+  --graph-order 2 \
+  --output-dir "$RUN_DIR"

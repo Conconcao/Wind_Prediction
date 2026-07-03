@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SCRIPT_DIR.parent
@@ -23,6 +24,7 @@ from xinyang_wind15.graph import (  # noqa: E402
 from xinyang_wind15.loading import (  # noqa: E402
     filter_time_window,
     load_scada_1min,
+    load_scada_15min_direction,
     load_turbine_metadata,
 )
 from xinyang_wind15.raw_one_min import (  # noqa: E402
@@ -30,6 +32,7 @@ from xinyang_wind15.raw_one_min import (  # noqa: E402
     build_raw_one_min_feature_frame,
     default_raw_one_min_config_path,
     load_raw_one_min_settings,
+    merge_direction_15min_snapshots,
     resolve_feature_columns,
 )
 from xinyang_wind15.window_store import write_window_store  # noqa: E402
@@ -83,10 +86,36 @@ def main() -> None:
         keep_times = sorted(scada_1min["timestamp"].unique())[-int(args.tail_timestamps) :]
         scada_1min = scada_1min.loc[scada_1min["timestamp"].isin(keep_times)].copy()
 
+    direction_snapshot_path = settings.data_paths.get("scada_15min_direction")
+    direction_feature_coverage = None
+    if direction_snapshot_path:
+        direction_15min = load_scada_15min_direction(
+            direction_snapshot_path,
+            max_turbines=args.max_turbines,
+        )
+        direction_15min = filter_time_window(
+            direction_15min,
+            timestamp_col="timestamp",
+            start=settings.data_window_start,
+            end=settings.data_window_end,
+        )
+        if args.tail_timestamps is not None:
+            keep_times = sorted(scada_1min["timestamp"].unique())[-int(args.tail_timestamps) :]
+            min_keep_time = min(keep_times)
+            direction_15min = direction_15min.loc[
+                direction_15min["timestamp"] <= max(keep_times)
+            ].copy()
+            direction_15min = direction_15min.loc[
+                direction_15min["timestamp"] >= (min_keep_time - pd.Timedelta(minutes=15))
+            ].copy()
+        scada_1min = merge_direction_15min_snapshots(scada_1min, direction_15min)
+        if "wd_mean" in scada_1min.columns:
+            direction_feature_coverage = float(scada_1min["wd_mean"].notna().mean())
+
     feature_frame = build_raw_one_min_feature_frame(
         scada_1min,
         include_time_features=bool(args.include_time_features),
-        include_direction_if_available=bool(args.include_direction_if_available),
+        include_direction_if_available=bool(args.include_direction_if_available or direction_snapshot_path),
     )
     requested_feature_columns = (
         list(args.feature_columns)
@@ -154,6 +183,8 @@ def main() -> None:
         "feature_columns": feature_columns,
         "feature_column_count": len(feature_columns),
         "min_target_coverage": min_target_coverage,
+        "direction_snapshot_path": direction_snapshot_path,
+        "direction_snapshot_coverage": direction_feature_coverage,
         "n_rows": int(len(feature_frame)),
         "n_timestamps": int(feature_frame["timestamp"].nunique()),
         "n_turbines": int(feature_frame["turbine_id"].nunique()),

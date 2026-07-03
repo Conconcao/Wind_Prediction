@@ -10,7 +10,7 @@ data:
   scada_15min: "/home3/s502024280003/Wind_Prediction/data/huaian/ALL_TURBINES_15min_202307-202512_QC2.parquet"
   scada_15min_direction: "/home3/s502024280003/Wind_Prediction/data/huaian/ALL_TURBINES_DIRECTION_15min_20231202-20240703_QC1.parquet"
   scada_1min: "/home3/s502024280003/Wind_Prediction/data/huaian/ALL_TURBINES_1min_202307-202512.parquet"
-  turbine_meta: "/home3/s502024280003/Wind_Prediction/data/huaian/风机基本信息.csv"
+  turbine_meta: "/home3/s502024280003/Wind_Prediction/data/huaian/风机基本信息汇总.csv"
   optional_wrf_15min: "/home3/s502024280003/Wind_Prediction/data/huaian/WRF_pred_interpolated.parquet"
 
 split:

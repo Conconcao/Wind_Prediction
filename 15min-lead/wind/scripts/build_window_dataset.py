@@ -14,11 +14,12 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from xinyang_wind15.features import build_timestep_feature_frame  # noqa: E402
-from xinyang_wind15.feature_presets import append_feature_block_columns  # noqa: E402
+from xinyang_wind15.feature_presets import append_feature_block_columns, validate_feature_columns  # noqa: E402
 from xinyang_wind15.graph import build_distance_adjacency  # noqa: E402
 from xinyang_wind15.loading import (  # noqa: E402
     build_scada_1min_aggregates,
     build_tower_met_wide,
+    filter_time_window,
     load_scada_15min,
     load_scada_1min,
     load_turbine_metadata,
@@ -63,17 +64,42 @@ def main() -> None:
     settings = load_settings(args.split_config)
     scada = load_scada_15min(
         settings.data_paths["scada_15min"],
+        direction_path=settings.data_paths.get("scada_15min_direction"),
         max_turbines=args.max_turbines,
         tail_timestamps=args.tail_timestamps,
     )
+    scada = filter_time_window(
+        scada,
+        timestamp_col="timestamp",
+        start=settings.data_window_start,
+        end=settings.data_window_end,
+    )
     tower_wide = None
     if args.include_tower:
-        tower_wide = build_tower_met_wide(settings.data_paths["met_tower"])
+        tower_path = settings.data_paths.get("met_tower")
+        if not tower_path:
+            raise ValueError("--include-tower requires data.met_tower in the split config.")
+        tower_wide = build_tower_met_wide(tower_path)
+        tower_wide = filter_time_window(
+            tower_wide,
+            timestamp_col="timestamp",
+            start=settings.data_window_start,
+            end=settings.data_window_end,
+        )
     one_min_agg = None
     if args.include_1min:
+        one_min_path = settings.data_paths.get("scada_1min")
+        if not one_min_path:
+            raise ValueError("--include-1min requires data.scada_1min in the split config.")
         scada_1min = load_scada_1min(
-            settings.data_paths["scada_1min"],
+            one_min_path,
             max_turbines=args.max_turbines,
+        )
+        scada_1min = filter_time_window(
+            scada_1min,
+            timestamp_col="timestamp",
+            start=settings.data_window_start,
+            end=settings.data_window_end,
         )
         one_min_agg = build_scada_1min_aggregates(
             scada_1min,
@@ -81,7 +107,10 @@ def main() -> None:
         )
     turbine_meta = None
     if args.include_spatial_context:
-        turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
+        turbine_meta = load_turbine_metadata(
+            settings.data_paths["turbine_meta"],
+            site=settings.site,
+        )
     feature_frame = build_timestep_feature_frame(
         scada,
         tower_wide=tower_wide,
@@ -107,6 +136,7 @@ def main() -> None:
         frame_columns=list(feature_frame.columns),
         block_names=feature_blocks,
     )
+    feature_columns = validate_feature_columns(feature_columns, frame=feature_frame)
     bundle = build_spatiotemporal_windows(
         feature_frame,
         feature_columns=feature_columns,
@@ -119,7 +149,10 @@ def main() -> None:
     save_window_bundle(bundle, out_dir)
 
     if turbine_meta is None:
-        turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
+        turbine_meta = load_turbine_metadata(
+            settings.data_paths["turbine_meta"],
+            site=settings.site,
+        )
     adjacency = build_distance_adjacency(turbine_meta, bundle["turbine_order"])
     adjacency_path = out_dir / "distance_adjacency.npy"
     adjacency_path.parent.mkdir(parents=True, exist_ok=True)

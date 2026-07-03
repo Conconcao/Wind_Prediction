@@ -1,4 +1,4 @@
-"""Train a seq2one LSTM / GRU / TFT-style model from a disk-backed store."""
+"""Train a seq2one LSTM / GRU / TFT / CNN+LSTM model from a disk-backed store."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ SRC_DIR = PROJECT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from xinyang_wind15.cnn_lstm import MultiTurbineCnnLstm  # noqa: E402
 from xinyang_wind15.gru import MultiTurbineGRU  # noqa: E402
 from xinyang_wind15.lstm import MultiTurbineLSTM  # noqa: E402
 from xinyang_wind15.sequence import (  # noqa: E402
@@ -37,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--store-dir", required=True)
     parser.add_argument(
         "--arch",
-        choices=["lstm", "gru", "tft"],
+        choices=["lstm", "gru", "tft", "cnn_lstm"],
         required=True,
     )
     parser.add_argument(
@@ -49,6 +50,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--conv-channels", type=int, default=64)
+    parser.add_argument("--conv-kernel-size", type=int, default=5)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--num-attention-heads", type=int, default=4)
     parser.add_argument("--stats-chunk-size", type=int, default=32)
@@ -74,6 +77,8 @@ def build_model(
     hidden_size: int,
     num_layers: int,
     dropout: float,
+    conv_channels: int,
+    conv_kernel_size: int,
     num_attention_heads: int,
 ) -> nn.Module:
     if arch == "gru":
@@ -88,6 +93,16 @@ def build_model(
         return MultiTurbineLSTM(
             n_turbines=n_turbines,
             n_features=n_features,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout,
+        )
+    if arch == "cnn_lstm":
+        return MultiTurbineCnnLstm(
+            n_turbines=n_turbines,
+            n_features=n_features,
+            conv_channels=conv_channels,
+            kernel_size=conv_kernel_size,
             hidden_size=hidden_size,
             num_layers=num_layers,
             dropout=dropout,
@@ -195,6 +210,8 @@ def main() -> None:
         hidden_size=args.hidden_size,
         num_layers=args.num_layers,
         dropout=args.dropout,
+        conv_channels=args.conv_channels,
+        conv_kernel_size=args.conv_kernel_size,
         num_attention_heads=args.num_attention_heads,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
@@ -296,6 +313,8 @@ def main() -> None:
         "hidden_size": args.hidden_size,
         "num_layers": args.num_layers,
         "dropout": args.dropout,
+        "conv_channels": args.conv_channels,
+        "conv_kernel_size": args.conv_kernel_size,
         "num_attention_heads": args.num_attention_heads,
         "batch_size": args.batch_size,
         "epochs": args.epochs,

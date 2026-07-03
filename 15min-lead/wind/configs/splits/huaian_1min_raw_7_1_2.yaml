@@ -8,7 +8,7 @@ experiment:
 
 data:
   scada_1min: "C:/Users/caosh/Desktop/WTPC/data/huaian/ALL_TURBINES_1min_202307-202512.parquet"
-  turbine_meta: "C:/Users/caosh/Desktop/WTPC/data/huaian/风机基本信息.csv"
+  turbine_meta: "D:/Power_prediction/Data/风机基本信息汇总.csv"
 
 split:
   method: chronological_ratio

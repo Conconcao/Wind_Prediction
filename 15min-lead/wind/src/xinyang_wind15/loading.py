@@ -10,18 +10,27 @@ import numpy as np
 import pandas as pd
 
 from .schema import (
+    RAW_SCADA_15MIN_DIRECTION_TO_CANONICAL,
     RAW_SCADA_15MIN_TO_CANONICAL,
     RAW_SCADA_1MIN_TO_CANONICAL,
     RAW_TOWER_TO_CANONICAL,
+    SCADA_15MIN_BASE_COLUMNS,
+    SCADA_15MIN_DIRECTION_COLUMNS,
+    SCADA_1MIN_BASE_COLUMNS,
     TOWER_WIDE_VARIABLES,
 )
 
 
 _FALLBACK_PATTERNS: dict[str, tuple[str, ...]] = {
     "scada_15min": ("ALL_TURBINES_15min_*.parquet",),
+    "scada_15min_direction": ("ALL_TURBINES_DIRECTION_15min_*.parquet",),
     "scada_1min": ("ALL_TURBINES_1min_*.parquet",),
     "tower_met": ("pre_QC*.xlsx", "*气象*观测*.xlsx"),
-    "turbine_meta": ("*风机基本信息*.csv",),
+    "turbine_meta": (
+        "*风机基本信息汇总*.csv",
+        "*风机基本信息*.csv",
+        "*椋庢満鍩烘湰淇℃伅*.csv",
+    ),
 }
 
 
@@ -64,6 +73,21 @@ def _filter_time_tail(
     return df.loc[df[timestamp_col].isin(keep_times)].copy()
 
 
+def filter_time_window(
+    df: pd.DataFrame,
+    *,
+    timestamp_col: str,
+    start: pd.Timestamp | None = None,
+    end: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    out = df
+    if start is not None:
+        out = out.loc[out[timestamp_col] >= pd.Timestamp(start)]
+    if end is not None:
+        out = out.loc[out[timestamp_col] <= pd.Timestamp(end)]
+    return out.copy()
+
+
 def _filter_turbines(
     df: pd.DataFrame,
     turbine_col: str,
@@ -86,9 +110,83 @@ def _filter_specific_turbines(
     return df.loc[df[turbine_col].isin(keep_turbines)].copy()
 
 
+def _ensure_columns(
+    df: pd.DataFrame,
+    columns: Sequence[str],
+) -> pd.DataFrame:
+    out = df.copy()
+    for column in columns:
+        if column not in out.columns:
+            out[column] = np.nan
+    return out
+
+
+def _normalize_canonical_frame(
+    df: pd.DataFrame,
+    *,
+    required_columns: Sequence[str],
+) -> pd.DataFrame:
+    out = _ensure_columns(df, required_columns)
+    out["timestamp"] = pd.to_datetime(out["timestamp"])
+    out["turbine_id"] = out["turbine_id"].astype(str).str.strip()
+    numeric_columns = [
+        column
+        for column in out.columns
+        if column not in {"turbine_id", "timestamp"}
+    ]
+    for column in numeric_columns:
+        out[column] = pd.to_numeric(out[column], errors="coerce")
+    return out
+
+
+def _load_scada_15min_direction(path: str | Path) -> pd.DataFrame:
+    resolved_path = _resolve_input_path(path, kind="scada_15min_direction")
+    df = pd.read_parquet(resolved_path)
+    df = df.rename(columns=RAW_SCADA_15MIN_DIRECTION_TO_CANONICAL)
+    df = _normalize_canonical_frame(
+        df,
+        required_columns=["turbine_id", "timestamp", *SCADA_15MIN_DIRECTION_COLUMNS],
+    )
+    keep_columns = ["turbine_id", "timestamp", *SCADA_15MIN_DIRECTION_COLUMNS]
+    return (
+        df.loc[:, keep_columns]
+        .drop_duplicates(subset=["turbine_id", "timestamp"], keep="last")
+        .sort_values(["turbine_id", "timestamp"])
+        .reset_index(drop=True)
+    )
+
+
+def _merge_scada_15min_direction(
+    scada_df: pd.DataFrame,
+    direction_df: pd.DataFrame,
+) -> pd.DataFrame:
+    renamed_direction = direction_df.rename(
+        columns={
+            column: f"{column}__direction"
+            for column in SCADA_15MIN_DIRECTION_COLUMNS
+        }
+    )
+    out = scada_df.merge(
+        renamed_direction,
+        on=["turbine_id", "timestamp"],
+        how="left",
+    )
+    for column in SCADA_15MIN_DIRECTION_COLUMNS:
+        direction_column = f"{column}__direction"
+        if direction_column not in out.columns:
+            continue
+        if column in out.columns:
+            out[column] = out[column].combine_first(out[direction_column])
+        else:
+            out[column] = out[direction_column]
+        out = out.drop(columns=[direction_column])
+    return out
+
+
 def load_scada_15min(
     path: str | Path,
     *,
+    direction_path: str | Path | None = None,
     max_turbines: int | None = None,
     turbine_ids: Sequence[str] | None = None,
     tail_timestamps: int | None = None,
@@ -96,7 +194,11 @@ def load_scada_15min(
     resolved_path = _resolve_input_path(path, kind="scada_15min")
     df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_15MIN_TO_CANONICAL)
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = _normalize_canonical_frame(df, required_columns=["turbine_id", "timestamp"])
+    if direction_path is not None:
+        direction_df = _load_scada_15min_direction(direction_path)
+        df = _merge_scada_15min_direction(df, direction_df)
+    df = _normalize_canonical_frame(df, required_columns=SCADA_15MIN_BASE_COLUMNS)
     df = _filter_specific_turbines(df, "turbine_id", turbine_ids)
     df = _filter_turbines(df, "turbine_id", max_turbines)
     df = _filter_time_tail(df, "timestamp", tail_timestamps)
@@ -114,7 +216,7 @@ def load_scada_1min(
     resolved_path = _resolve_input_path(path, kind="scada_1min")
     df = pd.read_parquet(resolved_path)
     df = df.rename(columns=RAW_SCADA_1MIN_TO_CANONICAL)
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = _normalize_canonical_frame(df, required_columns=SCADA_1MIN_BASE_COLUMNS)
     df = _filter_specific_turbines(df, "turbine_id", turbine_ids)
     df = _filter_turbines(df, "turbine_id", max_turbines)
     df = _filter_time_tail(df, "timestamp", tail_timestamps)
@@ -144,12 +246,18 @@ def build_scada_1min_aggregates(
     else:
         origin_index = None
 
-    wd_radians = np.deg2rad(df["wd"] % 360.0)
-    df["wd_sin"] = np.sin(wd_radians)
-    df["wd_cos"] = np.cos(wd_radians)
+    directional_cols: list[str] = []
+    if "wd" in df.columns and not df["wd"].isna().all():
+        wd_radians = np.deg2rad(df["wd"] % 360.0)
+        df["wd_sin"] = np.sin(wd_radians)
+        df["wd_cos"] = np.cos(wd_radians)
+        directional_cols = ["wd_sin", "wd_cos"]
 
-    continuous_cols = ["ws", "power", "nacelle_angle"]
-    directional_cols = ["wd_sin", "wd_cos"]
+    continuous_cols = [
+        col
+        for col in ("ws", "power", "nacelle_angle")
+        if col in df.columns and not df[col].isna().all()
+    ]
 
     feature_blocks: list[pd.DataFrame] = []
     for turbine_id, group in df.groupby("turbine_id", sort=False):
@@ -189,11 +297,28 @@ def build_scada_1min_aggregates(
     return pd.concat(feature_blocks, ignore_index=True)
 
 
-def load_turbine_metadata(path: str | Path) -> pd.DataFrame:
+def load_turbine_metadata(
+    path: str | Path,
+    *,
+    site: str | None = None,
+) -> pd.DataFrame:
     resolved_path = _resolve_input_path(path, kind="turbine_meta")
     df = pd.read_csv(resolved_path, encoding="utf-8-sig")
-    df["longitude_deg"] = df["longitude_deg"].astype(float)
-    df["latitude_deg"] = df["latitude_deg"].astype(float)
+    if site is not None and "site" in df.columns:
+        normalized_site = str(site).strip().lower()
+        site_values = df["site"].astype(str).str.strip().str.lower()
+        df = df.loc[site_values == normalized_site].copy()
+    df["turbine_id"] = df["turbine_id"].astype(str).str.strip()
+    duplicate_ids = (
+        df.loc[df["turbine_id"].duplicated(keep=False), "turbine_id"].drop_duplicates().tolist()
+    )
+    if duplicate_ids:
+        raise ValueError(
+            "Duplicate turbine_id values found in turbine metadata after site filtering: "
+            f"{duplicate_ids[:10]}"
+        )
+    df["longitude_deg"] = pd.to_numeric(df["longitude_deg"], errors="coerce")
+    df["latitude_deg"] = pd.to_numeric(df["latitude_deg"], errors="coerce")
     return df.sort_values("turbine_id").reset_index(drop=True)
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from xinyang_wind15.loading import load_turbine_metadata
 from xinyang_wind15.raw_one_min import (
     build_ratio_split_bounds,
     build_raw_one_min_feature_frame,
@@ -52,3 +53,20 @@ def test_resolve_feature_columns_rejects_missing_features() -> None:
         assert "wd_sin" in str(exc)
     else:
         raise AssertionError("Expected resolve_feature_columns to fail on missing raw features.")
+
+
+def test_load_turbine_metadata_filters_summary_by_site(tmp_path) -> None:
+    meta_path = tmp_path / "风机基本信息汇总.csv"
+    pd.DataFrame(
+        {
+            "site": ["huaian", "xinyang"],
+            "turbine_id": ["F01", "S01"],
+            "longitude_deg": [118.1, 114.2],
+            "latitude_deg": [33.6, 32.1],
+        }
+    ).to_csv(meta_path, index=False, encoding="utf-8-sig")
+
+    out = load_turbine_metadata(meta_path, site="huaian")
+
+    assert list(out["turbine_id"]) == ["F01"]
+    assert list(out["site"]) == ["huaian"]

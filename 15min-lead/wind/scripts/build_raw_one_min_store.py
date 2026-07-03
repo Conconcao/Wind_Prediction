@@ -122,7 +122,10 @@ def main() -> None:
         min_target_coverage=min_target_coverage,
     )
 
-    turbine_meta = load_turbine_metadata(settings.data_paths["turbine_meta"])
+    turbine_meta = load_turbine_metadata(
+        settings.data_paths["turbine_meta"],
+        site=settings.site,
+    )
     distance_adjacency = build_distance_adjacency(turbine_meta, metadata["turbine_order"])
     bearing_matrix = build_bearing_matrix(turbine_meta, metadata["turbine_order"])
     train_mask = (

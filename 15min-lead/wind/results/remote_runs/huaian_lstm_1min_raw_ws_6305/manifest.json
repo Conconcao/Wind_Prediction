@@ -1,0 +1,69 @@
+{
+  "run_name": "huaian_lstm_1min_raw_ws_6305",
+  "job_id": "6305",
+  "train_dir": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run",
+  "store_dir": "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store",
+  "log_dir": "logs",
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305",
+  "max_log_lines": 200,
+  "log_stem": "huaian_1min_lstm",
+  "copied_train_files": [
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/metrics.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/metrics.json"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/metrics.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/metrics.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/training_history.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/training_history.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/val_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/val_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/test_per_turbine.csv",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/test_per_turbine.csv"
+    },
+    {
+      "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/summary.json",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/summary.json"
+    }
+  ],
+  "store_summary": {
+    "source": "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/summary.json",
+    "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/store_summary.json"
+  },
+  "tailed_logs": [
+    {
+      "source": "logs/6305.huaian_1min_lstm.out",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/6305.huaian_1min_lstm.out"
+    },
+    {
+      "source": "logs/6305.huaian_1min_lstm.err",
+      "target": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/results/remote_runs/huaian_lstm_1min_raw_ws_6305/6305.huaian_1min_lstm.err"
+    }
+  ],
+  "excluded_large_files": [
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/val_predictions.csv",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/test_predictions.csv",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/gwnet_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/agcrn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/mtgnn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/moderntcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/gru_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/tcn_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_lstm_run/cfc_baseline.pt",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/feature_tensor.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/target_matrix.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/origin_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/target_indices.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/target_mask.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/split_labels.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/distance_adjacency.npy",
+    "15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store/correlation_adjacency.npy"
+  ]
+}

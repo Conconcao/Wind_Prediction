@@ -1,0 +1,154 @@
+Sender: LSF System <lsfadmin@asc2-gn01>
+Subject: Job 6308: <huaian_1min_gwnet> in cluster <asc2> Done
+
+Job <huaian_1min_gwnet> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jul  3 18:24:30 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jul  3 18:24:35 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jul  3 18:24:35 2026
+Terminated at Fri Jul  3 19:00:46 2026
+Results reported at Fri Jul  3 19:00:46 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J huaian_1min_gwnet
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 12:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_gwnet.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_gwnet.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_gwnet_run"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+python --version
+
+python 15min-lead/wind/scripts/train_gwnet_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --support-mode distance_correlation \
+  --epochs 20 \
+  --batch-size 64 \
+  --residual-channels 32 \
+  --dilation-channels 32 \
+  --skip-channels 128 \
+  --end-channels 256 \
+  --kernel-size 2 \
+  --blocks 2 \
+  --layers 2 \
+  --graph-order 2 \
+  --output-dir "$RUN_DIR"
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   2072.45 sec.
+    Max Memory :                                 1284 MB
+    Average Memory :                             920.56 MB
+    Total Requested Memory :                     49152.00 MB
+    Delta Memory :                               47868.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                150
+    Run time :                                   2191 sec.
+    Turnaround time :                            2176 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store",
+    "x_train_windows": 600154,
+    "x_val_windows": 87145,
+    "x_test_windows": 129770,
+    "lookback_steps": 60,
+    "horizon_steps": 15,
+    "feature_columns": [
+      "ws"
+    ],
+    "turbine_order": [
+      "F01",
+      "F02",
+      "F03",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08",
+      "F09",
+      "F10",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F17",
+      "F18",
+      "F19",
+      "F20"
+    ],
+    "min_target_coverage": 1.0,
+    "min_target_count": 20,
+    "supports": 2,
+    "support_mode": "distance_correlation",
+    "adaptive_adj": true,
+    "dynamic_directional_support": false,
+    "direction_support_source": "auto",
+    "direction_support_sigma_deg": 35.0,
+    "residual_channels": 32,
+    "dilation_channels": 32,
+    "skip_channels": 128,
+    "end_channels": 256,
+    "kernel_size": 2,
+    "blocks": 2,
+    "layers": 2,
+    "graph_order": 2,
+    "num_workers": 0,
+    "stats_chunk_size": 32,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_1min_gwnet_run"
+  },
+  "val": {
+    "mae": 0.6431230902671814,
+    "rmse": 0.859880090881707,
+    "r2": 0.8517635464668274,
+    "count": 1742900,
+    "mae_macro": 0.6431228160858155,
+    "rmse_macro": 0.8594824081247994,
+    "r2_macro": 0.8510793179273606,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.7002992630004883,
+    "rmse": 0.9446427045240493,
+    "r2": 0.8308704495429993,
+    "count": 2595400,
+    "mae_macro": 0.7002995163202286,
+    "rmse_macro": 0.9439634836027176,
+    "r2_macro": 0.830047532916069,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6308.huaian_1min_gwnet.err> for stderr output of this job.
+

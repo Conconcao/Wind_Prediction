@@ -1,0 +1,83 @@
+{
+  "config_path": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/configs/splits/huaian_1min_raw_7_1_2_server.yaml",
+  "experiment_name": "huaian_1min_raw_ws_15min_ahead",
+  "site": "huaian",
+  "target_column": "ws",
+  "target_mode": "point",
+  "base_resolution_minutes": 1,
+  "horizon_steps": 15,
+  "lookback_steps": 60,
+  "feature_columns": [
+    "ws"
+  ],
+  "feature_column_count": 1,
+  "min_target_coverage": 1.0,
+  "n_rows": 17598720,
+  "n_timestamps": 879960,
+  "n_turbines": 20,
+  "time_range": {
+    "min": "2023-07-03 00:00:00",
+    "max": "2025-07-03 19:59:00"
+  },
+  "split_bounds": {
+    "train_start": "2023-07-03 00:00:00",
+    "train_end": "2025-01-01 12:11:00",
+    "val_start": "2025-01-01 12:12:00",
+    "val_end": "2025-03-03 14:47:00",
+    "test_start": "2025-03-03 14:48:00",
+    "test_end": "2025-07-03 19:59:00"
+  },
+  "metadata": {
+    "feature_columns": [
+      "ws"
+    ],
+    "target_column": "ws",
+    "turbine_order": [
+      "F01",
+      "F02",
+      "F03",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08",
+      "F09",
+      "F10",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F17",
+      "F18",
+      "F19",
+      "F20"
+    ],
+    "lookback_steps": 60,
+    "horizon_steps": 15,
+    "min_target_coverage": 1.0,
+    "min_target_count": 20,
+    "feature_tensor_shape": [
+      879960,
+      20,
+      1
+    ],
+    "target_matrix_shape": [
+      879960,
+      20
+    ],
+    "target_mask_shape": [
+      879960,
+      20
+    ],
+    "n_valid_windows": 817069,
+    "n_train": 600154,
+    "n_val": 87145,
+    "n_test": 129770,
+    "valid_target_count_min": 20,
+    "valid_target_count_mean": 20.0,
+    "valid_target_count_max": 20
+  },
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store"
+}

@@ -1,0 +1,143 @@
+Sender: LSF System <lsfadmin@asc2-gn01>
+Subject: Job 6309: <huaian_1min_cnn_lstm> in cluster <asc2> Done
+
+Job <huaian_1min_cnn_lstm> was submitted from host <asc2-log01> by user <s502024280003> in cluster <asc2> at Fri Jul  3 18:24:36 2026
+Job was executed on host(s) <8*asc2-gn01>, in queue <gpu>, as user <s502024280003> in cluster <asc2> at Fri Jul  3 18:25:37 2026
+</home3/s502024280003> was used as the home directory.
+</home3/s502024280003/Wind_Prediction> was used as the working directory.
+Started at Fri Jul  3 18:25:37 2026
+Terminated at Fri Jul  3 18:39:19 2026
+Results reported at Fri Jul  3 18:39:19 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -J huaian_1min_cnn_lstm
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 12:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_cnn_lstm.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1min_cnn_lstm.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/huaian_1min_cnn_lstm_run"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+python --version
+
+python 15min-lead/wind/scripts/train_seq_model_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --arch cnn_lstm \
+  --epochs 20 \
+  --batch-size 64 \
+  --hidden-size 128 \
+  --num-layers 1 \
+  --conv-channels 64 \
+  --conv-kernel-size 5 \
+  --dropout 0.1 \
+  --output-dir "$RUN_DIR"
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   790.19 sec.
+    Max Memory :                                 1332 MB
+    Average Memory :                             971.03 MB
+    Total Requested Memory :                     49152.00 MB
+    Delta Memory :                               47820.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                150
+    Run time :                                   904 sec.
+    Turnaround time :                            883 sec.
+
+The output (if any) follows:
+
+Python 3.10.20
+{
+  "summary": {
+    "arch": "cnn_lstm",
+    "store_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_1min_raw_ws_store",
+    "lookback_steps": 60,
+    "horizon_steps": 15,
+    "feature_columns": [
+      "ws"
+    ],
+    "turbine_order": [
+      "F01",
+      "F02",
+      "F03",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08",
+      "F09",
+      "F10",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F17",
+      "F18",
+      "F19",
+      "F20"
+    ],
+    "train_windows": 600154,
+    "val_windows": 87145,
+    "test_windows": 129770,
+    "hidden_size": 128,
+    "num_layers": 1,
+    "dropout": 0.1,
+    "conv_channels": 64,
+    "conv_kernel_size": 5,
+    "num_attention_heads": 4,
+    "batch_size": 64,
+    "epochs": 20,
+    "learning_rate": 0.001,
+    "device": "cuda",
+    "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_1min_cnn_lstm_run"
+  },
+  "val": {
+    "mae": 0.6567097306251526,
+    "rmse": 0.8790250570742312,
+    "r2": 0.8450891971588135,
+    "count": 1742900,
+    "mae_macro": 0.6567096263170242,
+    "rmse_macro": 0.8786205654696786,
+    "r2_macro": 0.8444071322679519,
+    "split": "val"
+  },
+  "test": {
+    "mae": 0.7120968103408813,
+    "rmse": 0.9600122230466901,
+    "r2": 0.825322151184082,
+    "count": 2595400,
+    "mae_macro": 0.7120969831943512,
+    "rmse_macro": 0.9589410034997353,
+    "r2_macro": 0.8246445715427398,
+    "split": "test"
+  }
+}
+
+
+PS:
+
+Read file </home3/s502024280003/Wind_Prediction/logs/6309.huaian_1min_cnn_lstm.err> for stderr output of this job.
+

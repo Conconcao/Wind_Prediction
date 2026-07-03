@@ -1,0 +1,62 @@
+#!/bin/bash
+#BSUB -J huaian_gwnet_dirctx
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 12:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_gwnet_dirctx.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_gwnet_dirctx.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+STORE_TAG="${STORE_TAG:-huaian_store_directional_derived_ctx}"
+RUN_TAG="${RUN_TAG:-huaian_gwnet_directional_derived_ctx_run}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+RUN_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$RUN_TAG"
+SUPPORT_MODE="${SUPPORT_MODE:-distance_correlation}"
+EPOCHS="${EPOCHS:-30}"
+BATCH_SIZE="${BATCH_SIZE:-64}"
+RESIDUAL_CHANNELS="${RESIDUAL_CHANNELS:-32}"
+DILATION_CHANNELS="${DILATION_CHANNELS:-32}"
+SKIP_CHANNELS="${SKIP_CHANNELS:-128}"
+END_CHANNELS="${END_CHANNELS:-256}"
+KERNEL_SIZE="${KERNEL_SIZE:-2}"
+BLOCKS="${BLOCKS:-2}"
+LAYERS="${LAYERS:-2}"
+GRAPH_ORDER="${GRAPH_ORDER:-2}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$RUN_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/train_gwnet_from_store.py \
+  --store-dir "$STORE_DIR" \
+  --support-mode "$SUPPORT_MODE" \
+  --epochs "$EPOCHS" \
+  --batch-size "$BATCH_SIZE" \
+  --residual-channels "$RESIDUAL_CHANNELS" \
+  --dilation-channels "$DILATION_CHANNELS" \
+  --skip-channels "$SKIP_CHANNELS" \
+  --end-channels "$END_CHANNELS" \
+  --kernel-size "$KERNEL_SIZE" \
+  --blocks "$BLOCKS" \
+  --layers "$LAYERS" \
+  --graph-order "$GRAPH_ORDER" \
+  --output-dir "$RUN_DIR"

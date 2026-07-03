@@ -1,0 +1,61 @@
+experiment:
+  name: huaian_15min_wind_speed
+  site: huaian
+  task: turbine_level_15min_ahead_wind_speed
+  target_column: "ws_mean"
+  horizon_steps: 1
+  base_resolution_minutes: 15
+
+data:
+  scada_15min: "C:/Users/caosh/Desktop/WTPC/data/huaian/ALL_TURBINES_15min_202307-202512_QC2.parquet"
+  scada_15min_direction: "C:/Users/caosh/Desktop/WTPC/data/huaian/ALL_TURBINES_DIRECTION_15min_20231202-20240703_QC1.parquet"
+  scada_1min: "C:/Users/caosh/Desktop/WTPC/data/huaian/ALL_TURBINES_1min_202307-202512.parquet"
+  turbine_meta: "C:/Users/caosh/Desktop/WTPC/data/huaian/风机基本信息.csv"
+  optional_wrf_15min: "C:/Users/caosh/Desktop/WTPC/data/huaian/WRF_pred_interpolated.parquet"
+
+split:
+  method: chronological
+  ratio:
+    train: 0.7
+    val: 0.2
+    test: 0.1
+  data_window_start: "2023-07-03 00:00:00"
+  data_window_end: "2025-07-03 23:45:00"
+  train_start: "2023-12-02 00:15:00"
+  train_end: "2025-01-06 10:00:00"
+  val_start: "2025-01-06 10:15:00"
+  val_end: "2025-05-05 13:15:00"
+  test_start: "2025-05-05 13:30:00"
+  test_end: "2025-07-03 23:45:00"
+  warmup_steps_for_window_models: 96
+
+feature_sets:
+  F0_scada_15min_main:
+    - 风速
+    - 有功功率
+  F0b_scada_15min_direction:
+    - 风向平均
+    - 风向标准差
+    - 机舱位置平均
+    - 机舱位置标准差
+  F1_1min_available:
+    - 风速
+    - 有功功率
+  F2_static_meta:
+    - longitude_deg
+    - latitude_deg
+    - rated_capacity_mw
+    - hub_height_m
+    - rotor_diameter_m
+
+evaluation:
+  metrics:
+    - mae
+    - rmse
+    - r2
+    - skill_score_vs_persistence
+  report_levels:
+    - turbine_macro
+    - farm_mean
+  avoid_metrics:
+    - mape

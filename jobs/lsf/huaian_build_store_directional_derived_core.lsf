@@ -1,0 +1,58 @@
+#!/bin/bash
+#BSUB -J huaian_store_dircore
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=48GB]"
+#BSUB -W 08:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_store_dircore.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_store_dircore.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/huaian_7_2_1_server.yaml"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+STORE_TAG="${STORE_TAG:-huaian_store_directional_derived_core}"
+STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
+LOOKBACK_STEPS="${LOOKBACK_STEPS:-32}"
+MIN_TARGET_COVERAGE="${MIN_TARGET_COVERAGE:-0.85}"
+INCLUDE_1MIN="${INCLUDE_1MIN:-1}"
+INCLUDE_DERIVED_CORE="${INCLUDE_DERIVED_CORE:-1}"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$STORE_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+CMD=(
+  python 15min-lead/wind/scripts/build_window_store.py
+  --split-config "$CONFIG_PATH"
+  --lookback-steps "$LOOKBACK_STEPS"
+  --feature-preset huaian_directional_core
+  --min-target-coverage "$MIN_TARGET_COVERAGE"
+  --output-dir "$STORE_DIR"
+)
+
+if [ "$INCLUDE_1MIN" = "1" ]; then
+  CMD+=(--include-1min)
+fi
+
+if [ "$INCLUDE_DERIVED_CORE" = "1" ]; then
+  CMD+=(--include-derived-core)
+fi
+
+"${CMD[@]}"

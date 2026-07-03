@@ -1,7 +1,6 @@
 #!/bin/bash
 #BSUB -J huaian_gwnet_dircore
 #BSUB -q gpu
-#BSUB -L /bin/bash
 #BSUB -n 8
 #BSUB -gpu "num=1"
 #BSUB -R "span[hosts=1]"
@@ -14,7 +13,6 @@ set -eo pipefail
 
 PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
 ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
-CONDA_ROOT="${CONDA_ROOT:-$HOME/miniconda3}"
 STORE_TAG="${STORE_TAG:-huaian_store_directional_derived_core}"
 RUN_TAG="${RUN_TAG:-huaian_gwnet_directional_derived_core_run}"
 STORE_DIR="$PROJECT_ROOT/15min-lead/wind/artifacts/server_runs/$STORE_TAG"
@@ -35,27 +33,15 @@ mkdir -p "$PROJECT_ROOT/logs"
 mkdir -p "$RUN_DIR"
 cd "$PROJECT_ROOT"
 
-if [ -f "$CONDA_ROOT/etc/profile.d/conda.sh" ]; then
-  set +u
-  . "$CONDA_ROOT/etc/profile.d/conda.sh"
-  conda activate "$ENV_NAME"
-  set -u
-elif command -v conda >/dev/null 2>&1; then
+if command -v conda >/dev/null 2>&1; then
   eval "$(conda shell.bash hook)"
   set +u
   conda activate "$ENV_NAME"
   set -u
-elif [ -x "$CONDA_ROOT/envs/$ENV_NAME/bin/python" ]; then
-  export PATH="$CONDA_ROOT/envs/$ENV_NAME/bin:$PATH"
 elif [ -f ".venv/bin/activate" ]; then
   set +u
   source .venv/bin/activate
   set -u
-fi
-
-if ! command -v python >/dev/null 2>&1; then
-  echo "python not found after environment activation (ENV_NAME=$ENV_NAME, CONDA_ROOT=$CONDA_ROOT)" >&2
-  exit 127
 fi
 
 python --version

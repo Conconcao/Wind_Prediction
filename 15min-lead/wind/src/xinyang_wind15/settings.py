@@ -30,11 +30,19 @@ class ExperimentSettings:
     base_resolution_minutes: int
     data_paths: dict[str, str]
     split_bounds: SplitBounds
+    data_window_start: pd.Timestamp | None
+    data_window_end: pd.Timestamp | None
     raw: dict[str, Any]
 
 
 def _to_timestamp(value: str) -> pd.Timestamp:
     return pd.Timestamp(value)
+
+
+def _to_optional_timestamp(value: str | None) -> pd.Timestamp | None:
+    if value is None:
+        return None
+    return _to_timestamp(value)
 
 
 def default_split_config_path(
@@ -73,5 +81,7 @@ def load_settings(path: str | Path) -> ExperimentSettings:
         base_resolution_minutes=int(experiment["base_resolution_minutes"]),
         data_paths=raw["data"],
         split_bounds=bounds,
+        data_window_start=_to_optional_timestamp(split.get("data_window_start")),
+        data_window_end=_to_optional_timestamp(split.get("data_window_end")),
         raw=raw,
     )

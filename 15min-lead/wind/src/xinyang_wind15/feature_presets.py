@@ -36,6 +36,33 @@ FEATURE_PRESETS: dict[str, list[str]] = {
         "yaw_error_cos",
         "yaw_error_abs",
     ],
+    "multivariate_directional": [
+        "ws_mean",
+        "power_mean",
+        "ws_std",
+        "wd_sin",
+        "wd_cos",
+        "wd_std",
+        "nacelle_sin",
+        "nacelle_cos",
+        "nacelle_std",
+        "yaw_error_sin",
+        "yaw_error_cos",
+        "yaw_error_abs",
+    ],
+    "huaian_directional_core": [
+        "ws_mean",
+        "power_mean",
+        "wd_sin",
+        "wd_cos",
+        "wd_std",
+        "nacelle_sin",
+        "nacelle_cos",
+        "nacelle_std",
+        "yaw_error_sin",
+        "yaw_error_cos",
+        "yaw_error_abs",
+    ],
     "scada_core": [
         "ws_mean",
         "ws_std",
@@ -89,3 +116,23 @@ def append_feature_block_columns(
             if column.startswith(prefixes)
         )
     return sorted(set(selected))
+
+
+def validate_feature_columns(
+    feature_columns: list[str],
+    *,
+    frame,
+) -> list[str]:
+    missing = [column for column in feature_columns if column not in frame.columns]
+    if missing:
+        raise ValueError(
+            "Selected features are missing from the feature frame: "
+            f"{missing}"
+        )
+    all_nan = [column for column in feature_columns if frame[column].isna().all()]
+    if all_nan:
+        raise ValueError(
+            "Selected features are entirely missing for the current dataset/time window: "
+            f"{all_nan}"
+        )
+    return list(feature_columns)

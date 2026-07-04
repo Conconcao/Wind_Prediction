@@ -1,0 +1,41 @@
+#!/bin/bash
+#BSUB -J huaian_1minagg15
+#BSUB -q gpu
+#BSUB -n 8
+#BSUB -gpu "num=1"
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=64GB]"
+#BSUB -W 06:00
+#BSUB -o /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1minagg15.out
+#BSUB -e /home3/s502024280003/Wind_Prediction/logs/%J.huaian_1minagg15.err
+
+set -eo pipefail
+
+PROJECT_ROOT="/home3/s502024280003/Wind_Prediction"
+ENV_NAME="${ENV_NAME:-AIRU-WRF-torch}"
+CONFIG_PATH="$PROJECT_ROOT/15min-lead/wind/configs/splits/huaian_15min_from_1min_7_2_1_server.yaml"
+OUTPUT_DIR="$PROJECT_ROOT/data/huaian/derived"
+OUTPUT_PATH="$OUTPUT_DIR/ALL_TURBINES_15min_from_1min_20230703-20250703.parquet"
+SUMMARY_PATH="$OUTPUT_DIR/ALL_TURBINES_15min_from_1min_20230703-20250703.summary.json"
+
+mkdir -p "$PROJECT_ROOT/logs"
+mkdir -p "$OUTPUT_DIR"
+cd "$PROJECT_ROOT"
+
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+  set +u
+  conda activate "$ENV_NAME"
+  set -u
+elif [ -f ".venv/bin/activate" ]; then
+  set +u
+  source .venv/bin/activate
+  set -u
+fi
+
+python --version
+
+python 15min-lead/wind/scripts/aggregate_scada_1min_to_15min.py \
+  --split-config "$CONFIG_PATH" \
+  --output-path "$OUTPUT_PATH" \
+  --summary-path "$SUMMARY_PATH"

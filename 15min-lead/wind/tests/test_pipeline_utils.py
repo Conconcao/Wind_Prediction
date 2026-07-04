@@ -13,7 +13,11 @@ from xinyang_wind15.graph import (
     build_directional_supports_torch,
     build_graph_wavenet_supports,
 )
-from xinyang_wind15.loading import _resolve_input_path, build_scada_1min_aggregates
+from xinyang_wind15.loading import (
+    _resolve_input_path,
+    aggregate_scada_1min_to_15min,
+    build_scada_1min_aggregates,
+)
 from xinyang_wind15.settings import SplitBounds
 from xinyang_wind15.windows import build_spatiotemporal_windows, estimate_dense_window_bytes
 
@@ -153,6 +157,58 @@ def test_build_scada_1min_aggregates_and_merge() -> None:
     merged = build_timestep_feature_frame(scada, one_min_agg=agg)
     assert "m1_ws_15m_mean" in merged.columns
     assert merged["m1_ws_15m_mean"].notna().all()
+
+
+def test_aggregate_scada_1min_to_15min_builds_canonical_frame() -> None:
+    one_min = pd.DataFrame(
+        [
+            {
+                "turbine_id": "T01",
+                "timestamp": pd.Timestamp("2025-01-01 00:00:00"),
+                "ws": 1.0,
+                "power": 10.0,
+                "wd": 350.0,
+                "nacelle_angle": 5.0,
+            },
+            {
+                "turbine_id": "T01",
+                "timestamp": pd.Timestamp("2025-01-01 00:01:00"),
+                "ws": 3.0,
+                "power": 12.0,
+                "wd": 10.0,
+                "nacelle_angle": 355.0,
+            },
+            {
+                "turbine_id": "T01",
+                "timestamp": pd.Timestamp("2025-01-01 00:14:00"),
+                "ws": 5.0,
+                "power": 14.0,
+                "wd": 0.0,
+                "nacelle_angle": 0.0,
+            },
+            {
+                "turbine_id": "T01",
+                "timestamp": pd.Timestamp("2025-01-01 00:15:00"),
+                "ws": 7.0,
+                "power": 16.0,
+                "wd": 90.0,
+                "nacelle_angle": 90.0,
+            },
+        ]
+    )
+    aggregated = aggregate_scada_1min_to_15min(one_min)
+    assert list(aggregated["timestamp"]) == [
+        pd.Timestamp("2025-01-01 00:00:00"),
+        pd.Timestamp("2025-01-01 00:15:00"),
+    ]
+
+    first = aggregated.iloc[0]
+    assert first["ws_mean"] == pytest.approx(3.0)
+    assert first["ws_max"] == pytest.approx(5.0)
+    assert first["ws_min"] == pytest.approx(1.0)
+    assert first["cnt_raw"] == pytest.approx(3.0)
+    assert first["wd_mean"] == pytest.approx(0.0)
+    assert first["nacelle_mean"] == pytest.approx(0.0)
 
 
 def test_build_timestep_feature_frame_adds_direction_and_yaw_features() -> None:

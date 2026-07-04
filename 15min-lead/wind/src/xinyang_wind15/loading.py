@@ -238,6 +238,94 @@ def load_scada_1min(
     return df
 
 
+def _circular_mean_deg(values: pd.Series) -> float:
+    arr = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        return float("nan")
+    radians = np.deg2rad(np.mod(arr, 360.0))
+    sin_mean = float(np.mean(np.sin(radians)))
+    cos_mean = float(np.mean(np.cos(radians)))
+    if np.isclose(sin_mean, 0.0) and np.isclose(cos_mean, 0.0):
+        return float("nan")
+    angle = float(np.mod(np.rad2deg(np.arctan2(sin_mean, cos_mean)), 360.0))
+    if np.isclose(angle, 360.0):
+        return 0.0
+    return angle
+
+
+def _circular_std_deg(values: pd.Series) -> float:
+    arr = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size <= 1:
+        return float("nan")
+    radians = np.deg2rad(np.mod(arr, 360.0))
+    sin_mean = float(np.mean(np.sin(radians)))
+    cos_mean = float(np.mean(np.cos(radians)))
+    resultant = np.hypot(sin_mean, cos_mean)
+    if not np.isfinite(resultant) or resultant <= 0.0:
+        return float("nan")
+    clipped = float(np.clip(resultant, 1e-12, 1.0))
+    return float(np.rad2deg(np.sqrt(-2.0 * np.log(clipped))))
+
+
+def aggregate_scada_1min_to_15min(
+    scada_1min: pd.DataFrame,
+    *,
+    freq: str = "15min",
+) -> pd.DataFrame:
+    """Aggregate canonical 1-minute SCADA into canonical 15-minute SCADA."""
+    df = scada_1min.copy()
+    if df.empty:
+        return pd.DataFrame(columns=SCADA_15MIN_BASE_COLUMNS)
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["bucket_timestamp"] = df["timestamp"].dt.floor(freq)
+    blocks: list[pd.DataFrame] = []
+    for turbine_id, group in df.groupby("turbine_id", sort=False):
+        indexed = group.sort_values("timestamp").set_index("timestamp")
+        out = pd.DataFrame(index=indexed.resample(freq).size().index)
+
+        if "ws" in indexed.columns:
+            out["ws_mean"] = indexed["ws"].resample(freq).mean()
+            out["ws_max"] = indexed["ws"].resample(freq).max()
+            out["ws_min"] = indexed["ws"].resample(freq).min()
+            out["ws_std"] = indexed["ws"].resample(freq).std()
+            out["cnt_raw"] = indexed["ws"].resample(freq).count()
+
+        if "power" in indexed.columns:
+            out["power_mean"] = indexed["power"].resample(freq).mean()
+            out["power_max"] = indexed["power"].resample(freq).max()
+            out["power_min"] = indexed["power"].resample(freq).min()
+            out["power_std"] = indexed["power"].resample(freq).std()
+
+        if "wd" in indexed.columns and not indexed["wd"].isna().all():
+            wd_resample = indexed["wd"].resample(freq)
+            out["wd_mean"] = wd_resample.apply(_circular_mean_deg)
+            out["wd_max"] = wd_resample.max()
+            out["wd_min"] = wd_resample.min()
+            out["wd_std"] = wd_resample.apply(_circular_std_deg)
+
+        if "nacelle_angle" in indexed.columns and not indexed["nacelle_angle"].isna().all():
+            nacelle_resample = indexed["nacelle_angle"].resample(freq)
+            out["nacelle_mean"] = nacelle_resample.apply(_circular_mean_deg)
+            out["nacelle_max"] = nacelle_resample.max()
+            out["nacelle_min"] = nacelle_resample.min()
+            out["nacelle_std"] = nacelle_resample.apply(_circular_std_deg)
+
+        out["turbine_id"] = str(turbine_id).strip()
+        out["timestamp"] = out.index
+        if "cnt_raw" in out.columns:
+            out = out.loc[out["cnt_raw"] > 0].copy()
+        blocks.append(out.reset_index(drop=True))
+
+    if not blocks:
+        return pd.DataFrame(columns=SCADA_15MIN_BASE_COLUMNS)
+    result = pd.concat(blocks, ignore_index=True)
+    result = _normalize_canonical_frame(result, required_columns=SCADA_15MIN_BASE_COLUMNS)
+    return result.sort_values(["turbine_id", "timestamp"]).reset_index(drop=True)
+
+
 def build_scada_1min_aggregates(
     scada_1min: pd.DataFrame,
     *,

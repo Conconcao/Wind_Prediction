@@ -1,0 +1,64 @@
+{
+  "feature_columns": [
+    "ws_mean"
+  ],
+  "target_column": "ws_mean",
+  "turbine_order": [
+    "F01",
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14",
+    "F15",
+    "F16",
+    "F17",
+    "F18",
+    "F19",
+    "F20"
+  ],
+  "lookback_steps": 32,
+  "horizon_steps": 1,
+  "min_target_coverage": 0.85,
+  "min_target_count": 17,
+  "feature_tensor_shape": [
+    54876,
+    20,
+    1
+  ],
+  "target_matrix_shape": [
+    54876,
+    20
+  ],
+  "target_mask_shape": [
+    54876,
+    20
+  ],
+  "n_valid_windows": 54781,
+  "n_train": 36760,
+  "n_val": 12688,
+  "n_test": 5333,
+  "valid_target_count_min": 18,
+  "valid_target_count_mean": 19.99432284916303,
+  "valid_target_count_max": 20,
+  "estimated_store_gib": 0.00817716121673584,
+  "distance_adjacency_path": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_store_hubws_from_1minagg/distance_adjacency.npy",
+  "correlation_adjacency_path": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_store_hubws_from_1minagg/correlation_adjacency.npy",
+  "bearing_matrix_path": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_store_hubws_from_1minagg/bearing_matrix.npy",
+  "include_tower": false,
+  "include_1min": false,
+  "include_derived_core": false,
+  "include_spatial_context": false,
+  "feature_preset": "hub_ws_only",
+  "spatial_direction_sigma_deg": 30.0,
+  "spatial_distance_scale_km": 1.0,
+  "output_dir": "/home3/s502024280003/Wind_Prediction/15min-lead/wind/artifacts/server_runs/huaian_store_hubws_from_1minagg"
+}
